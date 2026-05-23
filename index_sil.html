@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIL-Eye — Monitor de Control SIL | GL Strategic × FONASA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0D1B2A;--gold:#C9A84C;--gold-lt:#E8C97A;--teal:#007B83;
+  --ink:#0D1117;--surface:#131920;--panel:#1A2332;--border:#243044;
+  --text:#E8EDF5;--muted:#7A8BA0;--green:#1D9E75;--red:#E05252;
+  --warn:#C9A84C;--blue:#378ADD;--violet:#8B7CF6;
+}
+html,body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--ink);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,123,131,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,123,131,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.layout{position:relative;z-index:1}
+header{background:linear-gradient(135deg,#0D1117,#131920);border-bottom:2px solid rgba(0,123,131,.3);padding:0 2rem;height:68px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:38px;height:38px;background:linear-gradient(135deg,var(--teal),#00A8B5);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.75rem;letter-spacing:.5px}
+.brand-name{font-size:1.1rem;font-weight:700;color:var(--text)}.brand-name span{color:var(--teal)}
+.brand-sub{font-size:.62rem;color:var(--muted);letter-spacing:.05em}
+.header-right{display:flex;align-items:center;gap:1rem}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);font-family:monospace}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+select{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:8px;font-size:.8rem;cursor:pointer}
+select:focus{outline:none;border-color:var(--teal)}
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 68px)}
+aside{background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:68px;height:calc(100vh - 68px);overflow-y:auto}
+.client-badge{margin:0 1rem 1.5rem;padding:.9rem 1rem;background:rgba(0,123,131,.08);border:1px solid rgba(0,123,131,.25);border-radius:10px}
+.cb-label{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.cb-name{font-size:.88rem;color:#00CDD6;font-weight:700;margin-top:.25rem}
+.cb-detail{font-size:.65rem;color:var(--muted);margin-top:.2rem}
+.nav-section{padding:.5rem 1rem;margin-bottom:.5rem}
+.nav-label{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:.6rem}
+.nav-item{display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:7px;cursor:pointer;font-size:.8rem;color:var(--muted);transition:all .2s;margin-bottom:.15rem;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover,.nav-item.active{background:rgba(0,123,131,.12);color:#00CDD6}
+.nav-item.active{border-left:3px solid var(--teal);padding-left:calc(.8rem - 3px)}
+main{padding:2rem;overflow-y:auto}
+.panel-wrap{display:none}.panel-wrap.active{display:block}
+.page-title{font-size:1.6rem;font-weight:700;color:var(--text);margin-bottom:.25rem}
+.page-sub{font-size:.8rem;color:var(--muted);margin-bottom:1.5rem}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 0 24px rgba(0,123,131,.12)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--teal),transparent)}
+.kpi.gold::before{background:linear-gradient(90deg,var(--gold),transparent)}
+.kpi.blue::before{background:linear-gradient(90deg,var(--blue),transparent)}
+.kpi.green::before{background:linear-gradient(90deg,var(--green),transparent)}
+.kpi.red::before{background:linear-gradient(90deg,var(--red),transparent)}
+.kpi.violet::before{background:linear-gradient(90deg,var(--violet),transparent)}
+.kpi-label{font-size:.67rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi-val{font-size:1.75rem;font-weight:700;margin:.4rem 0 .2rem;line-height:1}
+.kpi-val.gold{color:var(--gold)}.kpi-val.teal{color:var(--teal)}.kpi-val.blue{color:var(--blue)}.kpi-val.green{color:var(--green)}.kpi-val.red{color:var(--red)}.kpi-val.violet{color:var(--violet)}
+.kpi-sub{font-size:.7rem;color:var(--muted)}.kpi-sub.up{color:var(--green)}.kpi-sub.down{color:var(--red)}
+.kpi-icon{position:absolute;top:1rem;right:1.25rem;font-size:1.4rem;opacity:.13}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.card-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;font-size:.92rem;font-weight:600}
+.badge{font-size:.62rem;padding:.18rem .55rem;border-radius:12px;background:rgba(0,123,131,.12);color:var(--teal);letter-spacing:.05em;text-transform:uppercase}
+.badge.ok{background:rgba(29,158,117,.12);color:var(--green)}
+.badge.err{background:rgba(224,82,82,.12);color:var(--red)}
+.badge.warn{background:rgba(201,168,76,.12);color:var(--warn)}
+.badge.gold{background:rgba(201,168,76,.12);color:var(--gold)}
+.badge.violet{background:rgba(139,124,246,.12);color:var(--violet)}
+.chart-row{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.chart-wrap{position:relative;height:200px}
+.feed{display:flex;flex-direction:column;gap:6px}
+.feed-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:.78rem;transition:all .4s}
+.feed-item.new{border-color:rgba(29,158,117,.4);background:rgba(29,158,117,.05)}
+.feed-item.alert{border-color:rgba(224,82,82,.4);background:rgba(224,82,82,.05)}
+.feed-item.warn{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.05)}
+.fi-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
+.fi-dot.ok{background:rgba(29,158,117,.2);color:var(--green)}
+.fi-dot.err{background:rgba(224,82,82,.2);color:var(--red)}
+.fi-dot.warn{background:rgba(201,168,76,.2);color:var(--warn)}
+.fi-dot.teal{background:rgba(0,123,131,.2);color:var(--teal)}
+.fi-name{font-weight:600;color:var(--text);margin-bottom:3px}
+.fi-meta{color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.fi-saving{color:var(--green);font-weight:600}
+.fi-risk{color:var(--red);font-weight:600}
+.status-pill{display:inline-flex;align-items:center;padding:.15rem .5rem;border-radius:10px;font-size:.65rem;font-weight:600;white-space:nowrap}
+.sp-ok{background:rgba(29,158,117,.15);color:var(--green)}
+.sp-warn{background:rgba(201,168,76,.15);color:var(--warn)}
+.sp-err{background:rgba(224,82,82,.15);color:var(--red)}
+.sp-teal{background:rgba(0,123,131,.15);color:var(--teal)}
+.sp-violet{background:rgba(139,124,246,.15);color:var(--violet)}
+.btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:none;font-size:.78rem;cursor:pointer;color:var(--muted);transition:all .2s}
+.btn:hover{background:rgba(0,123,131,.1);color:var(--teal);border-color:rgba(0,123,131,.3)}
+.btn-teal{background:rgba(0,123,131,.15);color:var(--teal);border-color:rgba(0,123,131,.3);font-weight:700}
+.btn-teal:hover{background:rgba(0,123,131,.28)}
+.btn-gold{background:var(--gold);color:#0D1117;border-color:var(--gold);font-weight:700}
+.btn-gold:hover{background:var(--gold-lt)}
+.btn-red{background:rgba(224,82,82,.15);color:var(--red);border-color:rgba(224,82,82,.3);font-weight:700}
+.sim-bar{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center}
+.sim-label{font-size:.75rem;color:var(--muted)}
+.alert-banner{padding:10px 16px;border-radius:8px;margin-bottom:.75rem;font-size:.8rem;display:flex;align-items:flex-start;gap:10px;border:1px solid}
+.ab-err{background:rgba(224,82,82,.08);border-color:rgba(224,82,82,.3);color:#F08080}
+.ab-warn{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.3);color:var(--warn)}
+.ab-ok{background:rgba(29,158,117,.08);border-color:rgba(29,158,117,.3);color:var(--green)}
+.ab-teal{background:rgba(0,123,131,.08);border-color:rgba(0,123,131,.3);color:#00CDD6}
+.inst-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+.inst-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.1rem;cursor:pointer;transition:all .2s}
+.inst-card:hover{border-color:rgba(0,123,131,.5);transform:translateY(-1px)}
+.inst-card.sel{border-color:var(--teal);background:rgba(0,123,131,.07)}
+.ic-sigla{font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.12em;margin-bottom:.4rem}
+.ic-role{font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:.3rem}
+.ic-val{font-size:1.5rem;font-weight:700;margin-bottom:.15rem}
+.ic-sub{font-size:.7rem;color:var(--muted)}
+.detail-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1.5rem}
+.dp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:.75rem}
+.dp-item{background:var(--panel);border-radius:8px;padding:.75rem}
+.dp-lbl{font-size:.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
+.dp-v{font-size:1.1rem;font-weight:700;color:var(--text)}
+.dp-d{font-size:.7rem;color:var(--muted);margin-top:.15rem}
+.report-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.75rem;cursor:pointer;transition:all .2s}
+.report-card:hover{border-color:rgba(0,123,131,.4);transform:translateY(-1px)}
+.rc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem}
+.rc-title{font-size:.85rem;font-weight:600;color:var(--text)}
+.rc-meta{font-size:.72rem;color:var(--muted);margin-bottom:.5rem}
+.prog-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;background:var(--teal);width:0%;transition:width .1s linear}
+table{width:100%;border-collapse:collapse;font-size:.77rem}
+thead th{text-align:left;padding:.6rem .8rem;font-size:.61rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)}
+tbody tr{border-bottom:1px solid rgba(36,48,68,.6);transition:background .15s}
+tbody tr:hover{background:rgba(0,123,131,.03)}
+tbody td{padding:.65rem .8rem;color:var(--text);vertical-align:middle}
+.td-mono{font-family:monospace;font-size:.73rem;color:var(--muted)}
+.td-proc{font-weight:600;font-size:.77rem}
+.td-save{color:var(--green);font-weight:700;font-family:monospace}
+.td-risk{color:var(--red);font-weight:700}
+.td-roi{color:var(--violet);font-weight:700}
+.score-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:3px;width:80px}
+.score-fill{height:100%;border-radius:3px}
+.diag-tag{display:inline-block;padding:.1rem .45rem;border-radius:6px;font-size:.62rem;font-weight:600;margin-right:3px}
+.dt-mental{background:rgba(139,124,246,.15);color:var(--violet)}
+.dt-msk{background:rgba(55,138,221,.15);color:var(--blue)}
+.dt-resp{background:rgba(0,123,131,.15);color:var(--teal)}
+.dt-dig{background:rgba(201,168,76,.15);color:var(--gold)}
+.dt-otro{background:rgba(122,139,160,.15);color:var(--muted)}
+.norm-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.norm-table tr{border-bottom:1px solid rgba(36,48,68,.5)}
+.norm-table td{padding:.65rem .8rem;vertical-align:top}
+.norm-table tr:hover td{background:rgba(0,123,131,.03)}
+.risk-chip{display:inline-flex;align-items:center;gap:4px;padding:.15rem .5rem;border-radius:8px;font-size:.65rem;font-weight:700}
+.rc-high{background:rgba(224,82,82,.15);color:var(--red)}
+.rc-med{background:rgba(201,168,76,.15);color:var(--warn)}
+.rc-low{background:rgba(29,158,117,.15);color:var(--green)}
+.sector-pill{display:inline-block;padding:.12rem .45rem;border-radius:6px;font-size:.64rem;font-weight:600;background:rgba(0,123,131,.12);color:var(--teal)}
+.observ-log{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.75rem}
+.ol-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem}
+.ol-ts{font-family:monospace;font-size:.7rem;color:var(--muted)}
+.ol-actor{font-size:.72rem;font-weight:600;padding:.1rem .4rem;border-radius:6px;background:rgba(0,123,131,.12);color:var(--teal)}
+.ol-action{font-size:.8rem;color:var(--text);margin:.2rem 0}
+.ol-detail{font-size:.72rem;color:var(--muted)}
+.resource-bar{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.res-btn{display:flex;align-items:center;gap:.5rem;padding:.55rem .9rem;border-radius:8px;border:1px solid var(--border);background:var(--panel);font-size:.78rem;color:var(--text);cursor:pointer;text-decoration:none;transition:all .2s}
+.res-btn:hover{border-color:var(--teal);color:var(--teal)}
+footer{padding:1.25rem 2rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:.7rem;color:var(--muted)}
+footer a{color:var(--teal);text-decoration:none}
+.info-box{background:rgba(0,123,131,.06);border:1px solid rgba(0,123,131,.2);border-radius:8px;padding:.85rem 1rem;font-size:.78rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+.info-box strong{color:var(--text)}
+@media(max-width:900px){.shell{grid-template-columns:1fr}aside{display:none}.kpi-grid{grid-template-columns:repeat(2,1fr)}.chart-row{grid-template-columns:1fr}.inst-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.kpi-grid{grid-template-columns:1fr}main{padding:1rem}.inst-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+<header>
+  <div class="brand">
+    <div class="brand-mark">SIL<br>EYE</div>
+    <div>
+      <div class="brand-name">SIL<span>Eye</span> · Monitor de Control SIL</div>
+      <div class="brand-sub">GL Strategic × FONASA · Programa Fonasa 2026 · Observabilidad &amp; Trazabilidad</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div><span id="liveTs">LIVE</span></div>
+    <select id="pilotoSel" onchange="changePiloto(this.value)">
+      <option value="rm">Piloto — Región Metropolitana</option>
+      <option value="bio">Piloto — Región del Biobío</option>
+      <option value="val">Piloto — Región de Valparaíso</option>
+      <option value="full">Red FONASA — Vista consolidada</option>
+    </select>
+  </div>
+</header>
+
+<div class="shell">
+<aside>
+  <div class="client-badge">
+    <div class="cb-label">Universo piloto activo</div>
+    <div class="cb-name" id="pilotoName">Región Metropolitana</div>
+    <div class="cb-detail" id="pilotoDetail">1.84M licencias · MM$ 312.400 gasto SIL</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Módulos</div>
+    <button class="nav-item active" onclick="showPanel('overview',this)">📊 Panel Ejecutivo</button>
+    <button class="nav-item" onclick="showPanel('scoring',this)">🎯 Scoring de Riesgo</button>
+    <button class="nav-item" onclick="showPanel('instituciones',this)">🏛 Por Institución</button>
+    <button class="nav-item" onclick="showPanel('normativa',this)">⚖️ Normativa &amp; Alertas</button>
+    <button class="nav-item" onclick="showPanel('observabilidad',this)">🔍 Observabilidad</button>
+    <button class="nav-item" onclick="showPanel('reportes',this)">📄 Reportes</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Simular escenario</div>
+    <button class="nav-item" onclick="simScenario('empleador')">🏢 Empleador outlier</button>
+    <button class="nav-item" onclick="simScenario('medico')">🩺 Médico emisor atípico</button>
+    <button class="nav-item" onclick="simScenario('suseso')">⚠️ Alerta SUSESO</button>
+    <button class="nav-item" onclick="simScenario('contraloria')">📋 Alerta Contraloría</button>
+    <button class="nav-item" onclick="simScenario('resolucion')">✅ Resolución COMPIN</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Contexto técnico</div>
+    <div style="margin:.25rem 0;padding:.75rem;background:rgba(0,123,131,.06);border:1px solid rgba(0,123,131,.2);border-radius:8px">
+      <div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Capa de observabilidad</div>
+      <div style="font-size:.65rem;color:#00CDD6;margin-top:.3rem;font-family:monospace">POST /api/sil-eye.php</div>
+      <div style="font-size:.6rem;color:var(--muted);margin-top:.35rem">Trazabilidad para Contraloría · DIPRES · Minsal</div>
+    </div>
+  </div>
+</aside>
+
+<main>
+
+<!-- OVERVIEW -->
+<div id="panel-overview" class="panel-wrap active">
+  <div class="page-title">Panel Ejecutivo — Control SIL</div>
+  <div class="page-sub" id="overviewSub">Programa Fonasa 2026 · Eje 1: Control y productividad en licencias médicas · Piloto activo</div>
+
+  <div class="resource-bar">
+    <a href="#" class="res-btn" onclick="showPanel('scoring',null);return false">🎯 <span>Scoring en vivo</span></a>
+    <a href="#" class="res-btn" onclick="showPanel('normativa',null);return false">⚖️ <span>Alertas SUSESO</span></a>
+    <a href="#" class="res-btn" onclick="showPanel('observabilidad',null);return false">🔍 <span>Trazabilidad</span></a>
+    <a href="#" class="res-btn" onclick="showPanel('reportes',null);return false">📊 <span>Informe DIPRES</span></a>
+  </div>
+
+  <div id="alertArea"></div>
+
+  <div class="kpi-grid">
+    <div class="kpi gold"><div class="kpi-icon">💸</div>
+      <div class="kpi-label">Gasto SIL Piloto (MM$)</div>
+      <div class="kpi-val gold" id="kGasto">312.400</div>
+      <div class="kpi-sub down" id="kGastoSub">↑ +7,7% vs 2023</div></div>
+    <div class="kpi green"><div class="kpi-icon">✂️</div>
+      <div class="kpi-label">Ahorro Evitable Estimado</div>
+      <div class="kpi-val green" id="kAhorro">MM$ 0</div>
+      <div class="kpi-sub up" id="kAhorroSub">Acumulado piloto</div></div>
+    <div class="kpi red"><div class="kpi-icon">🚨</div>
+      <div class="kpi-label">Licencias Alto Riesgo</div>
+      <div class="kpi-val red" id="kRiesgo">0</div>
+      <div class="kpi-sub" id="kRiesgoSub">Score ≥ 70/100</div></div>
+    <div class="kpi violet"><div class="kpi-icon">📐</div>
+      <div class="kpi-label">% Gasto Evitable Detectado</div>
+      <div class="kpi-val violet" id="kPct">0,0%</div>
+      <div class="kpi-sub">Meta programa: 8–18%</div></div>
+  </div>
+
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi"><div class="kpi-icon">📋</div>
+      <div class="kpi-label">Licencias Monitoreadas</div>
+      <div class="kpi-val teal" id="kLic">1.840.000</div>
+      <div class="kpi-sub" id="kLicSub">universo piloto RM</div></div>
+    <div class="kpi blue"><div class="kpi-icon">🏢</div>
+      <div class="kpi-label">Empleadores en análisis</div>
+      <div class="kpi-val blue" id="kEmpl">3.240</div>
+      <div class="kpi-sub">142 con patrón atípico</div></div>
+    <div class="kpi"><div class="kpi-icon">🩺</div>
+      <div class="kpi-label">Médicos Emisores</div>
+      <div class="kpi-val teal" id="kMed">18.400</div>
+      <div class="kpi-sub">87 outliers detectados</div></div>
+    <div class="kpi green"><div class="kpi-icon">⚖️</div>
+      <div class="kpi-label">Casos Cerrados COMPIN</div>
+      <div class="kpi-val green" id="kCasos">0</div>
+      <div class="kpi-sub up" id="kCasosSub">Resoluciones validadas</div></div>
+  </div>
+
+  <div class="chart-row">
+    <div class="card">
+      <div class="card-title">Gasto SIL mensual — Universo piloto (MM$)<span class="badge">12 meses</span></div>
+      <div class="chart-wrap"><canvas id="cGasto"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Por Diagnóstico<span class="badge">distribución gasto</span></div>
+      <div class="chart-wrap"><canvas id="cDiag"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Feed de eventos de scoring y resolución<span class="badge ok" id="feedBadge">● live</span></div>
+    <div class="feed" id="feedMain"></div>
+  </div>
+</div>
+
+<!-- SCORING -->
+<div id="panel-scoring" class="panel-wrap">
+  <div class="page-title">🎯 Motor de Scoring de Riesgo SIL</div>
+  <div class="page-sub">Score de riesgo por licencia, médico emisor y empleador · Métodos transparentes validados con SUSESO</div>
+
+  <div class="info-box">
+    <strong>Principio rector:</strong> El scoring <em>no reemplaza</em> decisiones clínicas. Prioriza qué casos COMPIN revisa en más detalle. Licencias legítimas se respetan. Modelo enfocado en <strong>patrones de uso atípicos</strong> — no en diagnósticos per se. Validado con SUSESO para evitar sesgo en salud mental y enfermedades crónicas.
+  </div>
+
+  <div class="sim-bar">
+    <span class="sim-label">Simular detección:</span>
+    <button class="btn" onclick="simScenario('empleador')">🏢 Empleador outlier</button>
+    <button class="btn" onclick="simScenario('medico')">🩺 Médico atípico</button>
+    <button class="btn btn-red" onclick="simScenario('suseso')">⚠️ Alerta SUSESO</button>
+    <button class="btn btn-teal" onclick="simScenario('resolucion')">✅ Resolución COMPIN</button>
+    <button class="btn btn-gold" onclick="simScenario('random')">⚡ Evento aleatorio</button>
+  </div>
+
+  <div id="scoringAlerts"></div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Licencias de Alto Riesgo — Universo piloto activo<span class="badge err" id="arCount">cargando…</span></div>
+    <table>
+      <thead><tr>
+        <th>ID Lic.</th><th>Diagnóstico</th><th>Días</th><th>Score</th>
+        <th>Señal principal</th><th>Emisor</th><th>Empleador</th><th>Acción COMPIN</th>
+      </tr></thead>
+      <tbody id="scoringTbody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Variables del modelo de scoring<span class="badge">Transparencia algorítmica</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:.5rem">
+      <div class="dp-item"><div class="dp-lbl">Diagnóstico agrupado</div><div class="dp-v" style="font-size:.85rem">F3x, M54, J0x…</div><div class="dp-d">CIE-10 categorías SUSESO</div></div>
+      <div class="dp-item"><div class="dp-lbl">Días solicitados vs aprobados</div><div class="dp-v" style="font-size:.85rem">Ratio D/A</div><div class="dp-d">Desviación vs percentil 90</div></div>
+      <div class="dp-item"><div class="dp-lbl">Frecuencia por afiliado</div><div class="dp-v" style="font-size:.85rem">N° lic/12 meses</div><div class="dp-d">Umbral: > 4 licencias/año</div></div>
+      <div class="dp-item"><div class="dp-lbl">Patrón empleador</div><div class="dp-v" style="font-size:.85rem">Concentración</div><div class="dp-d">Licencias/dotación</div></div>
+      <div class="dp-item"><div class="dp-lbl">Médico emisor</div><div class="dp-v" style="font-size:.85rem">Tasa emisión</div><div class="dp-d">Lic/mes vs par regional</div></div>
+      <div class="dp-item"><div class="dp-lbl">Región/Comuna</div><div class="dp-v" style="font-size:.85rem">Cluster geográfico</div><div class="dp-d">Densidad vs promedio</div></div>
+      <div class="dp-item"><div class="dp-lbl">Historial afiliado</div><div class="dp-v" style="font-size:.85rem">Series temporales</div><div class="dp-d">Licencias 36 meses</div></div>
+      <div class="dp-item"><div class="dp-lbl">Tipo contrato laboral</div><div class="dp-v" style="font-size:.85rem">Fijo/plazo/honorarios</div><div class="dp-d">Correlación con duración</div></div>
+      <div class="dp-item"><div class="dp-lbl">Costo asociado</div><div class="dp-v" style="font-size:.85rem">$ por episodio</div><div class="dp-d">Percentil costo FONASA</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- INSTITUCIONES -->
+<div id="panel-instituciones" class="panel-wrap">
+  <div class="page-title">🏛 Valor por Institución</div>
+  <div class="page-sub">Selecciona una institución para ver su rol, KPIs específicos y valor que entrega SIL-Eye</div>
+  <div class="inst-grid" id="instGrid"></div>
+  <div id="instDetail"></div>
+</div>
+
+<!-- NORMATIVA -->
+<div id="panel-normativa" class="panel-wrap">
+  <div class="page-title">⚖️ Normativa Vigente &amp; Alertas Regulatorias</div>
+  <div class="page-sub">Equivalente a alertas CMF en NovisEye · Aquí: SUSESO · Contraloría · DIPRES · Minsal</div>
+
+  <div id="normAlerts" style="margin-bottom:1rem"></div>
+
+  <div class="sim-bar">
+    <span class="sim-label">Simular alerta regulatoria:</span>
+    <button class="btn" onclick="simScenario('suseso')">⚠️ Alerta SUSESO</button>
+    <button class="btn btn-red" onclick="simScenario('contraloria')">📋 Contraloría</button>
+    <button class="btn btn-gold" onclick="simScenario('dipres')">💰 DIPRES</button>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Marco normativo SIL — Cumplimiento activo<span class="badge ok">Monitoreado</span></div>
+    <table class="norm-table">
+      <thead><tr><th style="width:30%">Instrumento</th><th style="width:18%">Emisor</th><th style="width:15%">Relevancia</th><th style="width:12%">Riesgo</th><th style="width:25%">Acción de control</th></tr></thead>
+      <tbody id="normTbody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Diagnósticos de mayor concentración de gasto<span class="badge warn">Foco piloto</span></div>
+    <div class="chart-wrap" style="height:180px"><canvas id="cDiagNorm"></canvas></div>
+    <div style="margin-top:.75rem;font-size:.75rem;color:var(--muted)">
+      🔵 Salud mental (F3x, F4x): 33,1% del gasto SIL · MSK (M40-M54): 21,8% · Respiratorio (J0x-J2x): 9,4%<br>
+      Modelo enfocado en <strong>patrones de uso atípicos</strong> dentro de estos grupos, no en diagnóstico per se.
+    </div>
+  </div>
+</div>
+
+<!-- OBSERVABILIDAD -->
+<div id="panel-observabilidad" class="panel-wrap">
+  <div class="page-title">🔍 Capa de Observabilidad y Trazabilidad</div>
+  <div class="page-sub">Registro inmutable de datos, reglas, decisiones y resultados · Auditable por Contraloría, DIPRES y tribunales</div>
+
+  <div class="info-box">
+    <strong>¿Para qué sirve esta capa?</strong> Documenta qué datos se usaron (fuentes, períodos, variables), qué reglas y modelos se aplicaron (versión, parámetros, umbrales), qué decisiones tomó COMPIN y cuándo, y qué resultados se obtuvieron. Esto permite <strong>defender cada decisión</strong> ante Contraloría, el Congreso y la opinión pública.
+  </div>
+
+  <div style="display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+    <button class="btn btn-teal" onclick="addObsLog()">⚡ Registrar evento manual</button>
+    <button class="btn">⬇ Exportar log CSV</button>
+    <button class="btn">📄 Informe Contraloría PDF</button>
+    <button class="btn">📊 Vista DIPRES</button>
+  </div>
+
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-title">Registro de eventos de trazabilidad<span class="badge" id="obsCount">0 entradas</span></div>
+    <div id="obsLog" style="max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div class="card">
+      <div class="card-title">Datos utilizados<span class="badge ok">Fuentes validadas</span></div>
+      <div style="font-size:.78rem;display:flex;flex-direction:column;gap:6px;margin-top:.25rem">
+        <div class="feed-item"><div class="fi-dot teal">✓</div><div><div class="fi-name">Base SUSESO — Licencias 2022-2024</div><div class="fi-meta"><span>Actualización: mensual</span><span>Convenio datos activo</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot teal">✓</div><div><div class="fi-name">FONASA — Gasto SIL por beneficiario</div><div class="fi-meta"><span>Actualización: mensual</span><span>Seudonimizado</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot teal">✓</div><div><div class="fi-name">COMPIN — Resoluciones y citaciones</div><div class="fi-meta"><span>Tiempo real</span><span>Acceso controlado</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot warn">!</div><div><div class="fi-name">SII — Tipo contrato laboral</div><div class="fi-meta"><span>Pendiente convenio</span><span>En tramitación</span></div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Versiones del modelo<span class="badge violet">Control de cambios</span></div>
+      <div style="font-size:.78rem;display:flex;flex-direction:column;gap:6px;margin-top:.25rem">
+        <div class="feed-item new"><div class="fi-dot ok">v3</div><div><div class="fi-name">Score v3.1 — Modelo actual en producción</div><div class="fi-meta"><span>Validado SUSESO: 12-Mar-2026</span><span>AUC: 0.82</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot warn">v2</div><div><div class="fi-name">Score v2.4 — Modelo anterior</div><div class="fi-meta"><span>Reemplazado: 12-Mar-2026</span><span>AUC: 0.74</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot warn">v1</div><div><div class="fi-name">Score v1.0 — Prototipo piloto</div><div class="fi-meta"><span>Solo diagnóstico+duración</span><span>AUC: 0.63</span></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORTES -->
+<div id="panel-reportes" class="panel-wrap">
+  <div class="page-title">📄 Reportes Institucionales</div>
+  <div class="page-sub">Informes certificados para Comité SIL · DIPRES · Contraloría · Dirección FONASA · Minsal</div>
+  <div id="reportList"></div>
+</div>
+
+</main>
+</div>
+
+<footer>
+  <span>© 2026 <a href="https://glstrategic.cl" target="_blank">GL Strategic</a> · SIL-Eye v1.0 — Programa Fonasa 2026 · Eje 1: Control SIL</span>
+  <span style="font-family:monospace;font-size:.62rem">Powered by NovisEye Framework · fintech.ingenieriadegestion.cl</span>
+  <span>Confidencial · Comité SIL FONASA–SUSESO–Minsal · Solo uso interno</span>
+</footer>
+</div>
+
+<script>
+var PILOTOS={
+  rm:{name:"Región Metropolitana",detail:"1.84M licencias · MM$ 312.400 gasto SIL",gasto:312400,licencias:"1.840.000",ahorro:0,riesgo:0,pct:"0,0%",empleadores:"3.240",medicos:"18.400",casos:0,
+    months:[23100,24800,26200,25400,27800,26100,28400,29700,27300,28900,31200,33500],
+    diag:["Salud Mental","Musculoesq.","Respiratorio","Digestivo","Otros"],
+    diagVals:[103500,68200,29400,18700,92600]},
+  bio:{name:"Región del Biobío",detail:"920K licencias · MM$ 187.600 gasto SIL",gasto:187600,licencias:"920.000",ahorro:0,riesgo:0,pct:"0,0%",empleadores:"1.840",medicos:"9.200",casos:0,
+    months:[12100,13400,14800,13200,15600,14200,16400,17800,15900,17200,19400,20600],
+    diag:["Salud Mental","Musculoesq.","Respiratorio","Digestivo","Otros"],
+    diagVals:[62000,41000,17600,11200,55800]},
+  val:{name:"Región de Valparaíso",detail:"780K licencias · MM$ 168.400 gasto SIL",gasto:168400,licencias:"780.000",ahorro:0,riesgo:0,pct:"0,0%",empleadores:"1.560",medicos:"7.800",casos:0,
+    months:[10800,11900,13200,12100,14200,13100,15200,16400,14800,15800,17600,18400],
+    diag:["Salud Mental","Musculoesq.","Respiratorio","Digestivo","Otros"],
+    diagVals:[55700,36800,15800,10100,50000]},
+  full:{name:"Red FONASA — Consolidado",detail:"7.91M licencias · MM$ 2.157.230 gasto SIL",gasto:2157230,licencias:"7.910.000",ahorro:0,riesgo:0,pct:"0,0%",empleadores:"21.400",medicos:"74.000",casos:0,
+    months:[158000,168000,181000,174000,192000,183000,198000,214000,196000,208000,224000,261230],
+    diag:["Salud Mental","Musculoesq.","Respiratorio","Digestivo","Otros"],
+    diagVals:[713890,470700,203780,129430,639430]}
+};
+
+var SCORING_DATA=[
+  {id:"LM-2026-0841",diag:"F32.1",diagTag:"dt-mental",diagLabel:"Salud Mental",dias:45,score:92,señal:"Recurrencia: 6ª lic. en 14 meses",emisor:"Dr. R.V. (outlier)",empleador:"Emp. A (96 lic.)",accion:"Citación urgente"},
+  {id:"LM-2026-1124",diag:"M54.5",diagTag:"dt-msk",diagLabel:"Musculoesq.",dias:30,score:88,señal:"Empleador: 340 lic./trimestre",emisor:"Dr. J.M. (normal)",empleador:"Emp. B (340 lic.)",accion:"Revisión documental"},
+  {id:"LM-2026-0393",diag:"F41.1",diagTag:"dt-mental",diagLabel:"Salud Mental",dias:60,score:84,señal:"Duración 3.2σ sobre par diagnóstico",emisor:"Dr. C.S. (outlier)",empleador:"Emp. C (normal)",accion:"Auditoría médica"},
+  {id:"LM-2026-2287",diag:"J06.9",diagTag:"dt-resp",diagLabel:"Respiratorio",dias:21,score:79,señal:"4ª lic. respiratorio en invierno 2025",emisor:"Dr. P.A. (normal)",empleador:"Emp. D (normal)",accion:"Revisión documental"},
+  {id:"LM-2026-0718",diag:"M47.8",diagTag:"dt-msk",diagLabel:"Musculoesq.",dias:90,score:76,señal:"Duración > P95 + empleador concentrado",emisor:"Dr. R.V. (outlier)",empleador:"Emp. B (340 lic.)",accion:"Citación programada"},
+  {id:"LM-2026-3341",diag:"K57.3",diagTag:"dt-dig",diagLabel:"Digestivo",dias:28,score:72,señal:"Médico emisor: 128 lic./mes",emisor:"Dr. A.H. (outlier)",empleador:"Emp. E (normal)",accion:"Revisión documental"},
+];
+
+var NORM_DATA=[
+  {inst:"DFL N°1/2005 Art. 88–107",emisor:"Minsal",rel:"Alto",risk:"high",accion:"Plazos validación licencias por tipo; control duración máxima"},
+  {inst:"Circular SUSESO 3.437 (2024)",emisor:"SUSESO",rel:"Crítico",risk:"high",accion:"Protocolo scoring: prohibición sesgo diagnóstico; validación modelos"},
+  {inst:"Res. Ex. FONASA N°847 (2025)",emisor:"FONASA",rel:"Alto",risk:"med",accion:"Convenio datos piloto; acceso seudonimizado; trazabilidad obligatoria"},
+  {inst:"Instructivo COMPIN (2025)",emisor:"Minsal",rel:"Alto",risk:"med",accion:"Tiempos de respuesta por nivel de riesgo; protocolos citación y cierre"},
+  {inst:"Glosa Presupuestaria 2026 – FONASA",emisor:"DIPRES",rel:"Crítico",risk:"high",accion:"Metas de ahorro evitable vinculadas a desembolso de fondos adicionales"},
+  {inst:"Ley N°21.365 – Protección datos salud",emisor:"Congreso",rel:"Crítico",risk:"high",accion:"Seudonimización obligatoria; control acceso; log de consultas"},
+  {inst:"Circular N°72 Contraloría (2023)",emisor:"Contraloría",rel:"Alto",risk:"med",accion:"Fundamento auditable de decisiones algorítmicas en sector público"},
+  {inst:"Plan Nacional Tiempos de Espera 2022–2026",emisor:"Minsal",rel:"Medio",risk:"low",accion:"Coordinación con Eje 2 (listas de espera) sin interferencia"},
+];
+
+var INSTITUCIONES=[
+  {sigla:"FONASA",role:"Dueño financiero del programa",pain:"Gasto SIL creciente, difícil de controlar sin datos; DIPRES exige rendición de resultados",delivers:"Dashboard de gasto evitable en piloto · Score de riesgo · Evidencia para Hacienda",val:"MM$ 28.400",vc:"green",sub:"ahorro evitable estimado acumulado (piloto RM)",detail:[{l:"Gasto monitoreable",v:"MM$ 312.400",d:"universo piloto RM"},{l:"Ahorro potencial (8–18%)",v:"MM$ 25–56K",d:"según literatura SUSESO"},{l:"Licencias flagged",v:"Score ≥ 70",d:"priorización COMPIN"},{l:"ROI programa",v:">400%",d:"vs costo operación piloto"}]},
+  {sigla:"SUSESO",role:"Rector normativo en licencias y SIL",pain:"Reglas de scoring deben ser validadas; riesgo sesgo en salud mental y crónicos",delivers:"Validación de reglas · Monitoreo sesgos · Coherencia normativa garantizada",val:"24 Reglas",vc:"teal",sub:"validadas por Comité SUSESO–FONASA",detail:[{l:"Reglas activas",v:"24 / 31",d:"versión v3.1 modelo"},{l:"Alertas emitidas",v:"87 en 2026",d:"período enero-abril"},{l:"Resoluciones en plazo",v:"91%",d:"sobre protocolo COMPIN"},{l:"Revisiones de sesgo",v:"Mensual",d:"informe Comité SIL"}]},
+  {sigla:"COMPIN",role:"Operador clínico-administrativo",pain:"Sin priorización clara: revisan casos al azar; recursos insuficientes para universo total",delivers:"Cola priorizada por score · Protocolos de acción por nivel · KPIs de productividad",val:"3.240",vc:"blue",sub:"casos priorizados para revisión activa",detail:[{l:"Casos score ≥ 70",v:"3.240",d:"acción: citación/auditoría"},{l:"Citaciones pendientes",v:"487",d:"plazo 10 días hábiles"},{l:"Revisiones completadas",v:"78%",d:"sobre meta mensual"},{l:"Ahorro verificado",v:"MM$ 4.820",d:"casos cerrados confirmados"}]},
+  {sigla:"MINSAL",role:"Garante política sanitaria",pain:"Programa SIL debe ser consistente con protección trabajador; evitar daño a enfermos legítimos",delivers:"Evidencia de que licencias legítimas no son afectadas · Coordinación con Eje 2",val:"12 Dx",vc:"gold",sub:"diagnósticos prioritarios monitoreados",detail:[{l:"Salud mental vigilada",v:"F3x, F4x",d:"33,1% del gasto SIL"},{l:"MSK vigilada",v:"M40–M54",d:"21,8% del gasto SIL"},{l:"Alertas Minsal",v:"14",d:"coordinadas 2026"},{l:"Lic. legítimas respetadas",v:"96,8%",d:"tasa no intervención"}]},
+  {sigla:"DIPRES",role:"Sponsor fiscal y evaluador de resultados",pain:"¿Cuánto se ahorra realmente? ¿Se puede escalar? Necesita evidencia auditada para decidir",delivers:"ROI documentado · Vinculación gasto–acción · Informe escalamiento mensual",val:"340%",vc:"violet",sub:"ROI del programa piloto (costo vs ahorro estimado)",detail:[{l:"Ahorro verificado",v:"MM$ 18.400",d:"al 30-Abr-2026"},{l:"Costo operación piloto",v:"MM$ 4.200",d:"equipo técnico + TI"},{l:"Próx. informe DIPRES",v:"15-May-2026",d:"decisión escalamiento"},{l:"Meta escalamiento",v:"x3 regiones",d:"condicional a pilotos"}]},
+  {sigla:"CONTRALORÍA",role:"Auditor de legalidad y fundamentos",pain:"¿Las decisiones de scoring tienen fundamento legal? ¿Se documentaron correctamente?",delivers:"Audit trail inmutable · Registro de reglas y versiones · Defensa ante cuestionamientos",val:"100%",vc:"teal",sub:"decisiones trazadas en log inmutable",detail:[{l:"Log de decisiones",v:"Inmutable",d:"cada acción registrada"},{l:"Versiones de modelos",v:"3 versiones",d:"archivadas con timestamp"},{l:"Fundamento legal",v:"DFL N°1/2005",d:"art. 88-107 + SUSESO"},{l:"Tiempo cobertura",v:"5 años",d:"retención log mínima"}]},
+];
+
+var EVENTS_FEED=[
+  {type:"ok",icon:"✓",name:"Score procesado: LM-2026-4891 — Salud mental, 32 días",cat:"Scoring",saving:0,riesgo:62,accion:"Monitoreo pasivo"},
+  {type:"ok",icon:"✓",name:"Citación COMPIN completada: LM-2026-0392 — Resolución favorable",cat:"COMPIN",saving:847,riesgo:88,accion:"Caso cerrado"},
+  {type:"warn",icon:"!",name:"Empleador 'Emp-B' supera umbral: 340 licencias/trimestre",cat:"Empleador",saving:0,riesgo:91,accion:"Notificación COMPIN"},
+  {type:"ok",icon:"✓",name:"Médico Dr.C.S. reclasificado: patrón normalizado",cat:"Scoring",saving:0,riesgo:45,accion:"Monitoreo reducido"},
+  {type:"ok",icon:"✓",name:"Reglas v3.1 actualizadas y validadas por SUSESO",cat:"Normativa",saving:0,riesgo:0,accion:"Log actualizado"},
+  {type:"warn",icon:"!",name:"Score alto detectado: LM-2026-5120 — MSK 90 días",cat:"Scoring",saving:0,riesgo:76,accion:"Revisión documental"},
+];
+
+var REPORTS=[
+  {title:"Informe DIPRES — Avance Programa SIL",sub:"Ahorro evitable verificado · ROI · Decisión escalamiento",period:"Mensual — 30-Abr-2026",pdf:"sil_informe_dipres.pdf",icon:"💰",badge:"DIPRES"},
+  {title:"Informe Comité SIL — Resultados Piloto",sub:"FONASA–SUSESO–COMPIN–Minsal · Métricas y aprendizajes",period:"Quincenal",pdf:"sil_informe_comite.pdf",icon:"🏛",badge:"Gobernanza"},
+  {title:"Reporte SUSESO — Validación Reglas y Sesgos",sub:"Reglas activas · Pruebas de sesgo · Versión modelo",period:"Mensual",pdf:"sil_informe_suseso.pdf",icon:"⚖️",badge:"Normativa"},
+  {title:"Reporte COMPIN — Productividad y Resoluciones",sub:"Casos priorizados · Citaciones · Ahorros verificados",period:"Mensual",pdf:"sil_informe_compin.pdf",icon:"📋",badge:"Operaciones"},
+  {title:"Audit Trail — Observabilidad para Contraloría",sub:"Log inmutable de datos, reglas y decisiones",period:"Continuo · A la fecha",pdf:"sil_audit_trail.pdf",icon:"🔍",badge:"Auditoría"},
+  {title:"Nota Técnica — Metodología Scoring v3.1",sub:"Variables, umbrales, validación AUC, pruebas de sesgo",period:"Versión marzo 2026",pdf:"sil_metodologia.pdf",icon:"📐",badge:"Técnico"},
+];
+
+var SCENARIOS={
+  empleador:{cls:"ab-err",msg:"🏢 Alerta scoring: Empleador 'Constructora F.' concentra 412 licencias en 90 días (umbral: 200). Score empleador: 91/100. COMPIN notificado para revisión grupal."},
+  medico:{cls:"ab-warn",msg:"🩺 Médico emisor outlier detectado: Dr. A.H. (código 4821) emitió 128 licencias en 30 días, 89% con Dx F32.x. Tasa: 8.2σ sobre par regional. Score: 87/100. Protocolo SUSESO activado."},
+  suseso:{cls:"ab-teal",msg:"⚖️ Alerta normativa SUSESO: Circular 3.441 modifica validación licencias tipo 3 (plazo > 30 días). Reglas de scoring actualizadas a v3.2. Comité SIL convocado para 05-May-2026."},
+  contraloria:{cls:"ab-warn",msg:"📋 Contraloría: Oficio 2.847 solicita detalle fundamento scoring LM-2026-0393. Audit trail exportado automáticamente. Respuesta preparada: 72 hrs."},
+  resolucion:{cls:"ab-ok",msg:"✅ COMPIN: 47 licencias de alto riesgo cerradas con ahorro verificado MM$ 1.247. Trazabilidad completa en log. Ahorros confirmados reportados a DIPRES."},
+  dipres:{cls:"ab-ok",msg:"💰 DIPRES: Informe mensual recibido. Ahorro verificado MM$ 18.400 supera meta fase 1 (MM$ 14.000). Pre-aprobado escalamiento a Región del Biobío."},
+  random:{cls:""}
+};
+
+var currentPiloto="rm",totalEvents=0,totalAhorro=0,totalRiesgo=0,totalCasos=0,chartG=null,chartD=null,chartDN=null,obsCount=0;
+var obsEntries=[];
+
+function fmtMM(n){return"MM$ "+Math.round(n).toLocaleString("es-CL")}
+
+function updateKPIs(){
+  var p=PILOTOS[currentPiloto];
+  var ah=p.ahorro+totalAhorro;
+  var pct=p.gasto>0?(ah/p.gasto*100):0;
+  document.getElementById("kGasto").textContent=p.gasto.toLocaleString("es-CL");
+  document.getElementById("kAhorro").textContent=fmtMM(ah);
+  document.getElementById("kAhorroSub").textContent="+"+totalEvents+" resoluciones registradas";
+  document.getElementById("kRiesgo").textContent=(p.riesgo+totalRiesgo).toLocaleString("es-CL");
+  document.getElementById("kRiesgoSub").textContent="Score ≥ 70/100 · universo "+p.name.split("—")[0].trim().split(" ").pop();
+  document.getElementById("kPct").textContent=pct.toFixed(1).replace(".",",")+"%";
+  document.getElementById("kCasos").textContent=(p.casos+totalCasos).toLocaleString("es-CL");
+  document.getElementById("kCasosSub").textContent="Resoluciones validadas";
+  document.getElementById("kLic").textContent=p.licencias;
+  document.getElementById("kLicSub").textContent="universo piloto "+p.name.split("Región").pop().trim().split("—")[0].trim();
+  document.getElementById("kEmpl").textContent=p.empleadores;
+  document.getElementById("kMed").textContent=p.medicos;
+  document.getElementById("pilotoName").textContent=p.name;
+  document.getElementById("pilotoDetail").textContent=p.detail;
+  document.getElementById("overviewSub").textContent="Programa Fonasa 2026 · Piloto: "+p.name+" · Período activo";
+}
+
+function buildCharts(){
+  var p=PILOTOS[currentPiloto];
+  if(chartG)chartG.destroy();
+  if(chartD)chartD.destroy();
+  var lbls=["May 25","Jun 25","Jul 25","Ago 25","Sep 25","Oct 25","Nov 25","Dic 25","Ene 26","Feb 26","Mar 26","Abr 26"];
+  chartG=new Chart(document.getElementById("cGasto"),{
+    type:"bar",
+    data:{labels:lbls,datasets:[{label:"MM$ gasto SIL",data:p.months,backgroundColor:"rgba(201,168,76,0.15)",borderColor:"#C9A84C",borderWidth:2,borderRadius:4,hoverBackgroundColor:"rgba(201,168,76,0.3)"}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(x){return" MM$ "+x.parsed.y.toLocaleString("es-CL")}}}},scales:{x:{grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#7A8BA0",font:{size:9},autoSkip:false,maxRotation:45}},y:{grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"#7A8BA0",callback:function(v){return"$"+Math.round(v/1000)+"k"},font:{size:9}}}}}
+  });
+  chartD=new Chart(document.getElementById("cDiag"),{
+    type:"doughnut",
+    data:{labels:p.diag,datasets:[{data:p.diagVals,backgroundColor:["#8B7CF6","#378ADD","#007B83","#C9A84C","#4A5568"],borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom",labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}},tooltip:{callbacks:{label:function(x){return" MM$ "+x.parsed.toLocaleString("es-CL")}}}}}
+  });
+}
+
+function buildNormChart(){
+  if(chartDN)chartDN.destroy();
+  chartDN=new Chart(document.getElementById("cDiagNorm"),{
+    type:"bar",
+    data:{
+      labels:["Salud Mental (F3x,F4x)","Musculoesq. (M40-M54)","Respiratorio (J0x)","Digestivo (K)","Otros"],
+      datasets:[{label:"% gasto SIL",data:[33.1,21.8,9.4,6.1,29.6],backgroundColor:["rgba(139,124,246,.5)","rgba(55,138,221,.5)","rgba(0,123,131,.5)","rgba(201,168,76,.5)","rgba(122,139,160,.4)"],borderColor:["#8B7CF6","#378ADD","#007B83","#C9A84C","#7A8BA0"],borderWidth:2,borderRadius:4}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(x){return" "+x.parsed.x+"% del gasto SIL"}}}},scales:{x:{grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"#7A8BA0",callback:function(v){return v+"%"},font:{size:10}}},y:{grid:{display:false},ticks:{color:"#7A8BA0",font:{size:10}}}}}
+  });
+}
+
+function buildFeed(){
+  var el=document.getElementById("feedMain");el.innerHTML="";
+  EVENTS_FEED.slice(0,5).forEach(function(ev){
+    var mins=Math.floor(Math.random()*25)+1;
+    var d=document.createElement("div");d.className="feed-item";
+    d.innerHTML='<div class="fi-dot '+(ev.type==="ok"?"ok":"warn")+'">'+ev.icon+'</div>'+
+      '<div style="flex:1">'+
+        '<div class="fi-name">'+ev.name+'</div>'+
+        '<div class="fi-meta">'+
+          (ev.saving?'<span class="fi-saving">Ahorro: '+fmtMM(ev.saving)+'</span>':'')+
+          (ev.riesgo?'<span class="fi-risk">Score: '+ev.riesgo+'/100</span>':'')+
+          '<span>'+ev.cat+'</span>'+
+          '<span>hace '+mins+' min</span>'+
+        '</div>'+
+      '</div>'+
+      '<span class="status-pill '+(ev.type==="ok"?"sp-ok":"sp-warn")+'">'+ev.accion+'</span>';
+    el.appendChild(d);
+  });
+}
+
+function buildScoring(){
+  var tb=document.getElementById("scoringTbody");tb.innerHTML="";
+  var count=0;
+  SCORING_DATA.forEach(function(r){
+    var scoreColor=r.score>=85?"var(--red)":r.score>=75?"var(--warn)":"var(--blue)";
+    var fillColor=r.score>=85?"#E05252":r.score>=75?"#C9A84C":"#378ADD";
+    var tr=document.createElement("tr");
+    tr.innerHTML=
+      '<td class="td-mono">'+r.id+'</td>'+
+      '<td><span class="diag-tag '+r.diagTag+'">'+r.diagLabel+'</span> <span style="color:var(--muted);font-size:.7rem">'+r.diag+'</span></td>'+
+      '<td style="color:var(--text);font-weight:600">'+r.dias+' d</td>'+
+      '<td><div style="font-weight:700;color:'+scoreColor+'">'+r.score+'/100</div><div class="score-bar"><div class="score-fill" style="width:'+r.score+'%;background:'+fillColor+'"></div></div></td>'+
+      '<td style="font-size:.75rem;color:var(--muted)">'+r.señal+'</td>'+
+      '<td class="td-mono">'+r.emisor+'</td>'+
+      '<td class="td-mono">'+r.empleador+'</td>'+
+      '<td><span class="status-pill '+(r.score>=85?"sp-err":r.score>=75?"sp-warn":"sp-teal")+'">'+r.accion+'</span></td>';
+    tb.appendChild(tr);
+    if(r.score>=70)count++;
+  });
+  document.getElementById("arCount").textContent=count+" de alto riesgo";
+}
+
+function buildNorma(){
+  var tb=document.getElementById("normTbody");tb.innerHTML="";
+  NORM_DATA.forEach(function(r){
+    var riskLbl=r.risk==="high"?"CRÍTICO":r.risk==="med"?"ALTO":"MEDIO";
+    var riskClass=r.risk==="high"?"rc-high":r.risk==="med"?"rc-med":"rc-low";
+    var tr=document.createElement("tr");
+    tr.innerHTML=
+      '<td style="font-size:.78rem;font-weight:600;color:var(--text)">'+r.inst+'</td>'+
+      '<td><span class="sector-pill">'+r.emisor+'</span></td>'+
+      '<td style="font-size:.75rem;color:var(--muted)">'+r.rel+'</td>'+
+      '<td><span class="risk-chip '+riskClass+'">'+riskLbl+'</span></td>'+
+      '<td style="font-size:.74rem;color:var(--muted)">'+r.accion+'</td>';
+    tb.appendChild(tr);
+  });
+}
+
+function buildInstituciones(){
+  var g=document.getElementById("instGrid");g.innerHTML="";
+  INSTITUCIONES.forEach(function(inst,i){
+    var d=document.createElement("div");d.className="inst-card";
+    d.innerHTML='<div class="ic-sigla">'+inst.sigla+'</div><div class="ic-role">'+inst.role+'</div><div class="ic-val '+inst.vc+'">'+inst.val+'</div><div class="ic-sub">'+inst.sub+'</div>';
+    d.onclick=function(){showInst(i)};
+    g.appendChild(d);
+  });
+}
+
+function showInst(i){
+  document.querySelectorAll(".inst-card").forEach(function(c,j){c.classList.toggle("sel",j===i)});
+  var inst=INSTITUCIONES[i];
+  var dp=document.getElementById("instDetail");
+  var h='<div class="detail-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">'+
+    '<div><div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">'+inst.sigla+' — Rol en programa SIL</div>'+
+    '<div style="font-size:1rem;font-weight:700;color:var(--text);margin-top:.2rem">'+inst.role+'</div></div>'+
+    '</div>'+
+    '<div style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem"><strong style="color:var(--red)">Problema:</strong> '+inst.pain+'</div>'+
+    '<div style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem"><strong style="color:var(--green)">SIL-Eye entrega:</strong> '+inst.delivers+'</div>'+
+    '<div class="dp-grid">';
+  inst.detail.forEach(function(it){
+    h+='<div class="dp-item"><div class="dp-lbl">'+it.l+'</div><div class="dp-v">'+it.v+'</div><div class="dp-d">'+it.d+'</div></div>';
+  });
+  h+='</div></div>';
+  dp.innerHTML=h;
+}
+
+function buildObsLog(){
+  var container=document.getElementById("obsLog");container.innerHTML="";
+  var entries=[
+    {ts:"2026-04-08 09:14:22",actor:"FONASA-Analytics",action:"Score v3.1 ejecutado sobre universo piloto RM — 1.840.000 licencias procesadas",detail:"AUC validado: 0.82 · Tiempo proceso: 4m 12s · 3.240 casos score ≥ 70"},
+    {ts:"2026-04-08 08:30:11",actor:"SUSESO",action:"Validación reglas batch v3.1 aprobada — 24 reglas activas, 7 en revisión",detail:"Sin sesgo detectado en F3x ni M54 · Firma digital: SUSESO-2026-0408"},
+    {ts:"2026-04-07 16:45:03",actor:"COMPIN-RM",action:"47 citaciones emitidas para licencias score ≥ 85 — Plazo: 10 días hábiles",detail:"Ahorro estimado pendiente verificación: MM$ 1.247 · Ref: COMPIN-RM-2026-047"},
+    {ts:"2026-04-07 11:22:44",actor:"FONASA-DG",action:"Informe mensual enviado a DIPRES — Avance fase 1 piloto RM",detail:"Ahorro verificado a la fecha: MM$ 18.400 · Meta fase 1: MM$ 14.000 ✓ Superada"},
+    {ts:"2026-04-05 09:00:00",actor:"Comité SIL",action:"Sesión ordinaria — Aprobación expansión criterio empleador (umbral 200 lic./trim.)",detail:"Acta N°08-2026 · Participantes: FONASA, SUSESO, COMPIN, DIPRES (obs.) · Resolución unánime"},
+  ];
+  obsEntries.forEach(function(e){entries.unshift(e)});
+  document.getElementById("obsCount").textContent=entries.length+" entradas";
+  entries.forEach(function(e){
+    var d=document.createElement("div");d.className="observ-log";
+    d.innerHTML='<div class="ol-head"><span class="ol-ts">'+e.ts+'</span><span class="ol-actor">'+e.actor+'</span></div>'+
+      '<div class="ol-action">'+e.action+'</div>'+
+      '<div class="ol-detail">'+e.detail+'</div>';
+    container.appendChild(d);
+  });
+}
+
+function addObsLog(){
+  var now=new Date().toLocaleString("es-CL").replace(",","");
+  obsEntries.unshift({ts:now,actor:"SIL-Eye Sistema",action:"Evento manual registrado por operador — Log de auditoría",detail:"Timestamp: "+new Date().toISOString()+" · Operador autenticado · Hash: "+Math.random().toString(36).substr(2,12).toUpperCase()});
+  obsCount++;
+  buildObsLog();
+}
+
+function buildReports(){
+  var rl=document.getElementById("reportList");rl.innerHTML="";
+  REPORTS.forEach(function(r){
+    var d=document.createElement("div");d.className="report-card";
+    d.innerHTML='<div class="rc-head"><span class="rc-title">'+r.icon+' '+r.title+'</span><span class="badge">'+r.badge+'</span></div>'+
+      '<div class="rc-meta">'+r.sub+' — '+r.period+'</div>'+
+      '<div class="prog-bar"><div class="prog-fill" id="pf-'+r.pdf.replace('.pdf','')+'"></div></div>';
+    d.onclick=function(){openReport(r,d)};
+    rl.appendChild(d);
+  });
+}
+
+function openReport(r,card){
+  var pf=document.getElementById("pf-"+r.pdf.replace('.pdf',''));
+  if(!pf)return;
+  pf.style.width="0%";var w=0;
+  var iv=setInterval(function(){
+    w+=Math.floor(Math.random()*22)+12;
+    if(w>=100){w=100;pf.style.width="100%";clearInterval(iv);
+      setTimeout(function(){alert("📄 En producción: "+r.title+"\nEste reporte se genera automáticamente y se distribuye por correo cifrado a los destinatarios institucionales.");},200);
+      return;}
+    pf.style.width=w+"%";},55);
+}
+
+function simScenario(type){
+  if(type==="random"){var t=["empleador","medico","suseso","resolucion","contraloria"];type=t[Math.floor(Math.random()*t.length)];}
+  var sc=SCENARIOS[type];
+  if(!sc||!sc.msg)return;
+  var now=new Date().toLocaleTimeString("es-CL");
+  var areas=["alertArea","scoringAlerts","normAlerts"];
+  areas.forEach(function(aid){
+    var area=document.getElementById(aid);if(!area)return;
+    var d=document.createElement("div");d.className="alert-banner "+sc.cls;
+    d.innerHTML='<span style="font-family:monospace;font-size:.75rem;flex-shrink:0">['+now+']</span><span>'+sc.msg+'</span>';
+    area.insertBefore(d,area.firstChild);
+    if(area.children.length>2)area.removeChild(area.lastChild);
+  });
+  // Add to feed
+  var isOk=type==="resolucion"||type==="dipres";
+  var isWarn=type==="suseso"||type==="medico";
+  var ev=document.createElement("div");
+  ev.className="feed-item "+(isOk?"new":isWarn?"warn":"alert");
+  ev.innerHTML='<div class="fi-dot '+(isOk?"ok":isWarn?"warn":"err")+'">'+(isOk?"✓":isWarn?"!":"⚑")+'</div>'+
+    '<div style="flex:1"><div class="fi-name">'+sc.msg.substring(2,80)+'…</div>'+
+    '<div class="fi-meta"><span>'+now+'</span><span>Simulación SIL-Eye</span></div></div>'+
+    '<span class="status-pill '+(isOk?"sp-ok":isWarn?"sp-warn":"sp-err")+'">'+(isOk?"Resuelto":isWarn?"Monitoreando":"Alerta activa")+'</span>';
+  var fo=document.getElementById("feedMain");
+  if(fo){fo.insertBefore(ev,fo.firstChild);if(fo.children.length>7)fo.removeChild(fo.lastChild);}
+  var fl=document.getElementById("feedLive");
+  if(fl){var ec=ev.cloneNode(true);fl.insertBefore(ec,fl.firstChild);}
+  if(type==="resolucion"){totalAhorro+=1247;totalCasos+=47;totalEvents++;}
+  else if(type==="empleador"){totalRiesgo+=42;totalEvents++;}
+  else if(type==="medico"){totalRiesgo+=18;totalEvents++;}
+  else{totalEvents++;}
+  updateKPIs();
+  // log it
+  obsEntries.unshift({ts:new Date().toLocaleString("es-CL").replace(",",""),actor:"SIL-Eye Simulador",action:sc.msg.substring(2,100),detail:"Escenario: "+type+" · Timestamp: "+new Date().toISOString()});
+  buildObsLog();
+}
+
+function addRandomEvent(){
+  var ev=EVENTS_FEED[Math.floor(Math.random()*EVENTS_FEED.length)];
+  if(ev.saving){totalAhorro+=ev.saving;totalCasos++;}
+  if(ev.riesgo>=70)totalRiesgo++;
+  totalEvents++;updateKPIs();
+  var d=document.createElement("div");d.className="feed-item new";
+  var mins=Math.floor(Math.random()*4);
+  d.innerHTML='<div class="fi-dot '+(ev.type==="ok"?"ok":"warn")+'">'+(ev.type==="ok"?"✓":"!")+'</div>'+
+    '<div style="flex:1"><div class="fi-name">'+ev.name+'</div>'+
+    '<div class="fi-meta">'+
+    (ev.saving?'<span class="fi-saving">Ahorro: '+fmtMM(ev.saving)+'</span>':'')+
+    (ev.riesgo?'<span class="fi-risk">Score: '+ev.riesgo+'/100</span>':'')+
+    '<span>'+ev.cat+'</span><span>hace '+mins+' min</span></div></div>'+
+    '<span class="status-pill '+(ev.type==="ok"?"sp-ok":"sp-warn")+'">'+ev.accion+'</span>';
+  var fo=document.getElementById("feedMain");
+  if(fo){fo.insertBefore(d,fo.firstChild);if(fo.children.length>7)fo.removeChild(fo.lastChild);}
+  setTimeout(function(){d.classList.remove("new");},1800);
+}
+
+function changePiloto(v){currentPiloto=v;updateKPIs();buildCharts();}
+
+function showPanel(id,btn){
+  document.querySelectorAll(".panel-wrap").forEach(function(p){p.classList.remove("active");});
+  document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
+  var panel=document.getElementById("panel-"+id);
+  if(panel)panel.classList.add("active");
+  if(btn)btn.classList.add("active");
+  if(id==="normativa")setTimeout(buildNormChart,80);
+}
+
+function updateTimestamp(){
+  var el=document.getElementById("liveTs");
+  if(el)el.textContent="LIVE "+new Date().toLocaleTimeString("es-CL");
+}
+
+// Init
+buildFeed();buildScoring();buildNorma();buildInstituciones();buildObsLog();buildReports();updateKPIs();
+setTimeout(buildCharts,100);
+setInterval(addRandomEvent,5000);
+setInterval(updateTimestamp,1000);
+</script>
+</body>
+</html>

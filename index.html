@@ -1,0 +1,4328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HealthEye Pro — Decision Intelligence Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+
+/* ═══════════════════════════════════════════════
+   BLOQUE 1 — CHASIS VISUAL & ESTÉTICA TERMINAL
+   HealthEye Pro · Mission Control
+   ═══════════════════════════════════════════════ */
+
+/* ── RESET & TOKENS ─────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Superficie */
+  --bg:        #05070a;
+  --surface:   #0d1422;
+  --panel:     #0b1018;
+  --card:      #0f1520;
+  --card-hi:   #131b28;
+
+  /* Bordes */
+  --border:    #253142;
+  --border-hi: #2f3f55;
+
+  /* Accentos */
+  --teal:      #2dd4bf;
+  --teal-dim:  #1a7a6e;
+  --teal-glow: rgba(45, 212, 191, 0.35);
+  --amber:     #f59e0b;
+  --amber-dim: #7c4f06;
+  --amber-glow:rgba(245, 158, 11, 0.35);
+  --blue:      #3b82f6;
+  --blue-glow: rgba(59, 130, 246, 0.3);
+  --red:       #ef4444;
+  --red-glow:  rgba(239, 68, 68, 0.3);
+
+  /* Texto */
+  --txt:       #eaf0fb;
+  --txt-dim:   #a8bcd4;
+  --txt-ghost: #647a96;
+
+  /* Tipografía */
+  --mono:  'JetBrains Mono', 'Fira Code', monospace;
+  --sans:  'Space Grotesk', system-ui, sans-serif;
+
+  /* Layout */
+  --col-l:  245px;
+  --col-r:  280px;
+  --row-bot: 200px;
+  --topbar-h: 46px;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--sans);
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── SCROLLBARS ─────────────────────────────────── */
+::-webkit-scrollbar              { width: 4px; height: 4px; }
+::-webkit-scrollbar-track        { background: transparent; }
+::-webkit-scrollbar-thumb        { background: var(--border-hi); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover  { background: var(--teal-dim); }
+
+/* ══════════════════════════════════════════════════
+   LAYOUT PRINCIPAL
+   ══════════════════════════════════════════════════ */
+
+.app-shell {
+  display: grid;
+  grid-template-rows: var(--topbar-h) 34px 1fr;
+  height: 100vh;
+  width: 100vw;
+  background:
+    /* Scanlines sutil — atmosfera de terminal CRT */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    ),
+    var(--bg);
+}
+
+/* ── TOPBAR ─────────────────────────────────────── */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  justify-content: space-between;
+  position: relative;
+  /* Línea de acento superior */
+  box-shadow: 0 -2px 0 var(--teal) inset, 0 1px 0 var(--border);
+}
+
+.topbar-brand {
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--teal);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.topbar-brand .sep    { color: var(--border-hi); font-weight: 300; }
+.topbar-brand .sub    { font-size: 9px; color: var(--txt-dim); font-weight: 300; letter-spacing: 1px; }
+.topbar-brand .dot    {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal-glow);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.topbar-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Badge de cuello de botella */
+.bottleneck-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background .3s, color .3s, box-shadow .3s;
+}
+
+/* Reloj / timestamp */
+.ts-chip {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--txt-dim);
+  letter-spacing: 1px;
+}
+
+/* ── 3 COLUMNAS ─────────────────────────────────── */
+.main-view {
+  display: grid;
+  grid-template-columns: var(--col-l) 1fr var(--col-r);
+  overflow: hidden;
+  /* Separadores de 1px entre columnas vía gap + bg */
+  gap: 1px;
+  background: var(--border);
+}
+
+/* ── SIDEBAR IZQUIERDO — LEVERS ─────────────────── */
+.col-levers {
+  background: var(--surface);
+  padding: 14px 11px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── CENTRO — GRAFO ─────────────────────────────── */
+.col-graph {
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+  /* Atmósfera radial tipo pantalla de radar */
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 50%, #0d1828 0%, var(--bg) 80%),
+    var(--bg);
+}
+
+/* SVG principal del grafo */
+#mainGraph {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── SIDEBAR DERECHO — METRICS ──────────────────── */
+.col-metrics {
+  background: var(--surface);
+  padding: 14px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── FILA INFERIOR — TABLAS BLOOMBERG ───────────── */
+.fila-inferior {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border-top: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.panel-bloomberg {
+  background: var(--panel);
+  padding: 11px 13px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ══════════════════════════════════════════════════
+   COMPONENTES UI COMPARTIDOS
+   ══════════════════════════════════════════════════ */
+
+/* ── SECTION TITLE ──────────────────────────────── */
+.sec-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.sec-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border), transparent);
+}
+.sec-gap { margin-top: 16px; }
+
+/* ── LEVER CARDS (steppers) ─────────────────────── */
+.lever-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px 9px;
+  margin-bottom: 6px;
+  transition: border-color .2s;
+}
+.lever-card:hover  { border-color: var(--border-hi); }
+.lever-card:focus-within { border-color: var(--teal-dim); }
+
+.lever-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 6px;
+}
+.lever-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.step-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--txt-dim);
+  width: 22px;
+  height: 22px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color .15s, color .15s, background .15s;
+  font-family: var(--mono);
+}
+.step-btn:hover  { border-color: var(--teal); color: var(--teal); background: rgba(45,212,191,.06); }
+.step-btn:active { transform: scale(.92); }
+
+.step-val {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--teal);
+  flex: 1;
+  text-align: center;
+  transition: color .2s;
+}
+
+/* ── KPI CARDS ──────────────────────────────────── */
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px 9px;
+  margin-bottom: 7px;
+}
+.kpi-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 5px;
+}
+.kpi-val {
+  font-family: var(--mono);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  transition: color .25s;
+}
+.kpi-unit {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--txt-dim);
+  margin-left: 3px;
+}
+.kpi-sub {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  color: var(--txt-dim);
+  margin-top: 4px;
+}
+
+/* ── ALERT CHIPS ────────────────────────────────── */
+.alert-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 9px 10px;
+  border-radius: 3px;
+  margin-bottom: 6px;
+  border: 1px solid;
+  font-size: 12px;
+  font-family: var(--mono);
+  line-height: 1.45;
+}
+.alert-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+/* ── BLOOMBERG TABLE ────────────────────────────── */
+.b-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+.b-table th {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 800;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  text-align: left;
+  padding: 0 6px 6px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.b-table td {
+  font-family: var(--mono);
+  padding: 5px 6px;
+  border-bottom: 1px solid rgba(30,38,51,.7);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.b-table tr:last-child td { border-bottom: none; }
+.b-table tr.row-base td   { border-left: 2px solid var(--teal); padding-left: 5px; }
+.b-table tr.row-actual td { border-left: 2px solid var(--amber); background: rgba(245,158,11,.04); }
+.b-table tr.row-blocked   { opacity: .3; }
+
+/* Barra EBITDA inline */
+.bar-cell   { display: flex; align-items: center; gap: 6px; min-width: 100px; }
+.bar-bg     { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.bar-fill   { height: 100%; border-radius: 2px; transition: width .35s ease; }
+.bar-lbl    { font-family: var(--mono); font-size: 9.5px; min-width: 40px; text-align: right; }
+
+/* Badges tipo/palanca */
+.badge {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.badge-qw { background: rgba(45,212,191,.1);  color: var(--teal);  border-color: rgba(45,212,191,.35); }
+.badge-st { background: rgba(59,130,246,.1);  color: var(--blue);  border-color: rgba(59,130,246,.35); }
+.badge-bl { background: rgba(239,68,68,.08);  color: var(--red);   border-color: rgba(239,68,68,.25);  }
+
+/* Delta chips en comparador */
+.d-chip { display: inline-block; padding: 1px 5px; border-radius: 2px; font-size: 8.5px; font-weight: 700; font-family: var(--mono); }
+.d-pos  { background: rgba(45,212,191,.12); color: var(--teal); }
+.d-neg  { background: rgba(239,68,68,.12);  color: var(--red);  }
+.d-neu  { background: rgba(58,74,96,.2);    color: var(--txt-dim); }
+
+/* ══════════════════════════════════════════════════
+   GRAFO SVG — NODOS Y ARISTAS
+   ══════════════════════════════════════════════════ */
+
+/* Círculo base del nodo */
+.node-circle {
+  fill: var(--card);
+  stroke: var(--border-hi);
+  stroke-width: 2;
+  transition: stroke .3s, fill .3s;
+}
+.node-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 800;
+  fill: var(--txt-dim);
+  letter-spacing: .7px;
+  text-transform: uppercase;
+}
+.node-val {
+  font-family: var(--mono);
+  font-weight: 800;
+  fill: var(--txt);
+  transition: fill .25s;
+}
+.node-unit {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  fill: var(--txt-dim);
+}
+
+/* Aristas */
+.edge-line {
+  stroke: var(--border-hi);
+  stroke-width: 1.5;
+  opacity: .5;
+  fill: none;
+  transition: stroke .3s, opacity .3s;
+}
+
+/* ══════════════════════════════════════════════════
+   EFECTOS ESPECIALES
+   ══════════════════════════════════════════════════ */
+
+/* .glow-teal — neón teal para nodos nominales */
+.glow-teal {
+  filter: drop-shadow(0 0 4px var(--teal-glow))
+          drop-shadow(0 0 10px rgba(45,212,191,.2));
+}
+
+/* .glow-amber — neón ámbar para el cuello de botella */
+.glow-amber {
+  filter: drop-shadow(0 0 6px var(--amber-glow))
+          drop-shadow(0 0 16px rgba(245,158,11,.25));
+  stroke: var(--amber) !important;
+  stroke-width: 4 !important;
+}
+
+/* .glow-red — alerta negativa */
+.glow-red {
+  filter: drop-shadow(0 0 5px var(--red-glow));
+}
+
+/* @keyframes pulse — pulso de nodo cuello de botella */
+@keyframes pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px var(--amber-glow))
+            drop-shadow(0 0 10px rgba(245,158,11,.2));
+    stroke-opacity: 1;
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(245,158,11,.7))
+            drop-shadow(0 0 24px rgba(245,158,11,.4));
+    stroke-opacity: .75;
+  }
+}
+
+/* Clase aplicada vía JS al círculo cuello de botella */
+.node-bottleneck {
+  animation: pulse 1.8s ease-in-out infinite;
+  stroke: var(--amber) !important;
+  fill: #140f00 !important;
+}
+
+/* @keyframes pulse-dot — indicador live en topbar */
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 4px var(--teal-glow); opacity: 1; }
+  50%       { box-shadow: 0 0 10px var(--teal), 0 0 20px var(--teal-glow); opacity: .7; }
+}
+
+/* @keyframes fadeSlideIn — entrada de tablas al primer render */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-in { animation: fadeSlideIn .3s ease forwards; }
+
+/* Línea de progreso de cuello en topbar */
+.bottleneck-bar {
+  height: 2px;
+  border-radius: 1px;
+  transition: width .4s ease, background .4s;
+  background: var(--teal);
+}
+
+/* ── Grafo Reactivo: Glow & Pulse ── */
+.glow-accent {
+  filter: drop-shadow(0 0 8px var(--glow));
+  stroke: var(--accent) !important;
+}
+.pulse {
+  animation: pulse-node 2s infinite ease-in-out;
+}
+@keyframes pulse-node {
+  0%   { r: 40; }
+  50%  { r: 43; }
+  100% { r: 40; }
+}
+
+/* ── Bloque 4: KPIs topbar ── */
+.kpi-mini { display:flex; flex-direction:column; gap:2px; }
+.kpi-mini-label {
+  font-family: var(--mono); font-size: 7.5px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .8px; color: var(--txt-dim);
+}
+.val-mono {
+  font-family: var(--mono); font-size: 14px; font-weight: 700;
+  color: var(--txt); line-height: 1.2;
+}
+.val-mono small { font-size: 9px; color: var(--txt-dim); }
+
+/* ── Columnas numéricas de tablas ── */
+.col-pos { color: var(--teal);  font-family: var(--mono); text-align:right; }
+.col-neg { color: var(--red);   font-family: var(--mono); text-align:right; }
+
+/* ── Alert chip variants ── */
+.chip-alert {
+  background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.3);
+  color: var(--red);
+}
+.chip-warn  {
+  background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.3);
+  color: var(--amber);
+}
+.chip-good  {
+  background: rgba(45,212,191,.07); border-color: rgba(45,212,191,.25);
+  color: var(--teal);
+}
+.chip-neutral {
+  background: rgba(58,74,96,.1); border-color: rgba(58,74,96,.25);
+  color: var(--txt-dim);
+}
+.dot-alert { background: var(--red);   }
+.dot-warn  { background: var(--amber); }
+.dot-good  { background: var(--teal);  }
+.dot-neutral { background: var(--txt-ghost); }
+
+/* ══════════════════════════════════════════════════
+   FASE 8 — EXTENSIÓN HORARIA & WATERFALL
+   ══════════════════════════════════════════════════ */
+
+/* Toggle extensión horaria */
+.ext-toggle-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px 9px;
+  margin-bottom: 6px;
+  transition: border-color .2s;
+}
+.ext-toggle-wrap.active {
+  border-color: var(--amber-dim);
+  background: rgba(245,158,11,.05);
+}
+.ext-toggle-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 6px;
+}
+.ext-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ext-toggle-btn {
+  position: relative;
+  width: 36px;
+  height: 18px;
+  background: var(--border);
+  border-radius: 9px;
+  border: none;
+  cursor: pointer;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.ext-toggle-btn.on { background: var(--amber-dim); }
+.ext-toggle-btn::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  background: var(--txt-ghost);
+  border-radius: 50%;
+  transition: transform .2s, background .2s;
+}
+.ext-toggle-btn.on::after {
+  transform: translateX(18px);
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber-glow);
+}
+.ext-status {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--txt-dim);
+  transition: color .2s;
+}
+.ext-status.on { color: var(--amber); }
+
+/* ── Waterfall chart ────────────────────────────── */
+.wf-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 90px;
+  padding-top: 24px;
+  position: relative;
+  margin-bottom: 18px;
+}
+.wf-bar {
+  flex: 1;
+  position: relative;
+  min-width: 28px;
+  border-radius: 2px 2px 0 0;
+  transition: height .35s ease;
+}
+.wf-label {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 7px;
+  color: var(--txt-dim);
+  white-space: nowrap;
+  letter-spacing: .4px;
+}
+.wf-val {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.wf-connector {
+  position: absolute;
+  bottom: 0;
+  right: -4px;
+  width: 4px;
+  border-top: 1px dashed var(--border-hi);
+}
+
+/* ── Projection sparkline ───────────────────────── */
+.proj-container {
+  margin-top: 4px;
+}
+.proj-svg-wrap {
+  width: 100%;
+  overflow: visible;
+}
+.proj-month-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 6.5px;
+  color: var(--txt-dim);
+  margin-top: 3px;
+  letter-spacing: .3px;
+}
+.proj-legend {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-family: var(--mono);
+  font-size: 7px;
+  color: var(--txt-dim);
+}
+.proj-legend span { display: flex; align-items: center; gap: 4px; }
+.proj-legend .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+   ══════════════════════════════════════════════════ */
+
+#csv-upload {
+  position: relative;
+  cursor: pointer;
+}
+
+#csv-upload input[type="file"] {
+  display: none;
+}
+
+.csv-drop-zone {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.csv-drop-zone:hover,
+.csv-drop-zone.drag-over {
+  border-color: var(--teal-dim);
+  background: rgba(45, 212, 191, 0.04);
+  color: var(--teal);
+}
+
+.csv-drop-zone.drag-over {
+  border-color: var(--teal);
+  background: rgba(45, 212, 191, 0.08);
+  box-shadow: 0 0 0 1px var(--teal-glow);
+}
+
+.csv-drop-zone .csv-icon {
+  width: 12px;
+  height: 12px;
+  opacity: .6;
+  flex-shrink: 0;
+}
+
+.csv-drop-zone .csv-label { line-height: 1; }
+
+/* Toast de feedback */
+.csv-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 3px;
+  border: 1px solid;
+  letter-spacing: .5px;
+  pointer-events: none;
+  animation: toastIn .25s ease forwards;
+}
+.csv-toast.ok   { background: rgba(45,212,191,.12); border-color: rgba(45,212,191,.4); color: var(--teal); }
+.csv-toast.err  { background: rgba(239,68,68,.10);  border-color: rgba(239,68,68,.35); color: var(--red);  }
+.csv-toast.fade { animation: toastOut .3s ease forwards; }
+
+@keyframes toastIn  { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateY(4px); } }
+
+/* ══════════════════════════════════════════════════
+   BLOQUE 4 — TORNADO CHART & RESILIENCIA
+   ══════════════════════════════════════════════════ */
+
+/* ── Panel contenedor ─────────────────────────────── */
+#sensitivity-panel {
+  margin-top: 2px;
+}
+
+/* ── Toggle financiero / sanitario ──────────────── */
+.tornado-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 2px;
+  margin-bottom: 8px;
+}
+.tornado-toggle-btn {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 7.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 1px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--txt-dim);
+  transition: background .2s, color .2s;
+}
+.tornado-toggle-btn.active-fin {
+  background: rgba(45,212,191,.15);
+  color: var(--teal);
+}
+.tornado-toggle-btn.active-san {
+  background: rgba(239,68,68,.12);
+  color: var(--red);
+}
+
+/* ── Fila de palanca en el Tornado ──────────────── */
+.tornado-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+  position: relative;
+}
+.tornado-lbl {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  width: 66px;
+  flex-shrink: 0;
+  text-align: right;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tornado-track {
+  position: relative;
+  flex: 1;
+  height: 14px;
+  display: flex;
+  align-items: center;
+}
+/* Eje central vertical */
+.tornado-track::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-hi);
+  transform: translateX(-50%);
+  z-index: 0;
+}
+.tornado-bar-neg,
+.tornado-bar-pos {
+  position: absolute;
+  height: 10px;
+  border-radius: 1px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: width .35s ease;
+  z-index: 1;
+}
+.tornado-bar-neg {
+  right: 50%;
+  background: var(--red);
+  opacity: .85;
+  box-shadow: 0 0 4px rgba(239,68,68,.3);
+}
+.tornado-bar-pos {
+  left: 50%;
+  background: var(--teal);
+  opacity: .85;
+  box-shadow: 0 0 4px rgba(45,212,191,.3);
+}
+.tornado-val {
+  font-family: var(--mono);
+  font-size: 7px;
+  width: 30px;
+  flex-shrink: 0;
+  text-align: left;
+  color: var(--txt-dim);
+  white-space: nowrap;
+}
+/* Fila crítica (palanca más sensible) */
+.tornado-row.is-critical .tornado-lbl {
+  color: var(--red);
+}
+.tornado-row.is-critical .tornado-bar-neg,
+.tornado-row.is-critical .tornado-bar-pos {
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(239,68,68,.5);
+}
+
+/* ── FASE 7 TAREA 3: Tooltip Cadena Causal ──────── */
+#causal-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s ease;
+  max-width: 260px;
+  background: var(--card-hi);
+  border: 1px solid var(--border-hi);
+  border-radius: 3px;
+  padding: 9px 11px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.6);
+  font-family: var(--mono);
+  font-size: 8.5px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+}
+#causal-tooltip.visible { opacity: 1; }
+.ct-title {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--txt);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+.ct-chain { display: flex; flex-direction: column; gap: 3px; }
+.ct-step  { display: flex; align-items: flex-start; gap: 5px; }
+.ct-arrow { color: var(--teal); flex-shrink: 0; margin-top: 1px; }
+.ct-neg   { color: var(--red); font-weight: 700; }
+.ct-pos   { color: var(--teal); font-weight: 700; }
+.tornado-inline-val {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 7px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+  white-space: nowrap;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+.tornado-inline-neg {
+  right: calc(50% + 2px);
+  color: #ef4444;
+  text-shadow: 0 0 6px rgba(239,68,68,.6);
+}
+.tornado-inline-pos {
+  left: calc(50% + 2px);
+  color: #2dd4bf;
+  text-shadow: 0 0 6px rgba(45,212,191,.6);
+}
+
+/* ── Etiqueta de driver crítico ─────────────────── */
+.tornado-critical-tag {
+  font-family: var(--mono);
+  font-size: 7px;
+  font-weight: 800;
+  color: var(--red);
+  background: rgba(239,68,68,.1);
+  border: 1px solid rgba(239,68,68,.3);
+  border-radius: 2px;
+  padding: 2px 5px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+  animation: criticalFade 2s ease-in-out infinite;
+}
+@keyframes criticalFade {
+  0%,100% { opacity: 1; }
+  50%      { opacity: .6; }
+}
+
+/* ── EXECUTIVE SUMMARY CHIP (topbar) ───────────── */
+#exec-summary-chip {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--red);
+  background: rgba(239,68,68,.08);
+  border: 1px solid rgba(239,68,68,.3);
+  border-radius: 2px;
+  padding: 3px 10px;
+  letter-spacing: .4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 460px;
+  line-height: 1.3;
+  transition: color .3s, background .3s, border-color .3s;
+}
+#exec-summary-chip.ok {
+  color: var(--teal);
+  background: rgba(45,212,191,.07);
+  border-color: rgba(45,212,191,.25);
+}
+#exec-summary-chip.panic {
+  color: #ff3333;
+  background: rgba(239,68,68,.13);
+  border-color: rgba(239,68,68,.5);
+  animation: chip-panic 1.4s ease-in-out infinite;
+}
+@keyframes chip-panic {
+  0%,100% { box-shadow: 0 0 0px rgba(239,68,68,0); }
+  50%      { box-shadow: 0 0 10px rgba(239,68,68,.7), 0 0 22px rgba(239,68,68,.3); }
+}
+
+/* ── DECISION RECOMMENDATION CARD ──────────────── */
+.decision-card        { border: 1px solid var(--border); background: var(--card); border-radius: 4px; padding: 18px 18px; margin-bottom: 10px; font-family: var(--mono); }
+.decision-title       { font-size: 14px; font-weight: 800; margin-bottom: 7px; text-transform: uppercase; letter-spacing: .8px; }
+.decision-msg         { font-size: 15px; line-height: 1.6; color: var(--txt-dim); }
+.decision-critical    { border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.06); border-left: 4px solid var(--red); }
+.decision-positive    { border-color: rgba(45,212,191,.35); background: rgba(45,212,191,.06); border-left: 4px solid var(--teal); }
+.decision-neutral     { border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.06); border-left: 4px solid var(--amber); }
+
+/* ── NODO CRÍTICO — glow rojo pulsante ──────────── */
+@keyframes pulse-critical {
+  0%,100% {
+    filter: drop-shadow(0 0 5px rgba(239,68,68,.8))
+            drop-shadow(0 0 16px rgba(239,68,68,.4));
+    stroke-opacity: 1;
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(239,68,68,1))
+            drop-shadow(0 0 30px rgba(239,68,68,.6))
+            drop-shadow(0 0 50px rgba(239,68,68,.2));
+    stroke-opacity: .7;
+  }
+}
+.node-critical-alert {
+  stroke: var(--red) !important;
+  stroke-width: 3.5 !important;
+  fill: #1a0505 !important;
+  animation: pulse-critical 1.5s ease-in-out infinite !important;
+}
+
+/* ── TABBAR ─────────────────────────────────────── */
+.tabbar {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.tab-btn {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 800;
+  color: var(--txt-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 5px 10px;
+  cursor: pointer;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.tab-btn.active {
+  color: var(--teal);
+  border-color: var(--teal-dim);
+  background: rgba(45,212,191,.06);
+}
+.tab-view { display: none; overflow: hidden; }
+.tab-view.active { display: flex; flex-direction: column; overflow: hidden; height: 100%; }
+
+/* ── TAB GRIDS ─────────────────────────────────────── */
+.tab-grid {
+  height: 100%;
+  overflow: hidden;
+  background: var(--border);
+  gap: 1px;
+  display: grid;
+  flex: 1;
+  min-height: 0;
+}
+.tab-grid-decision    { grid-template-columns: var(--col-l) 1fr 360px; }
+.tab-grid-operaciones { grid-template-columns: 1.8fr .8fr .8fr; }
+.tab-grid-proyeccion  { grid-template-columns: 1.2fr .9fr .9fr; }
+
+.tab-panel {
+  background: var(--surface);
+  padding: 14px 12px;
+  overflow-y: auto;
+}
+.tab-panel.graph-panel {
+  background: radial-gradient(ellipse 70% 60% at 50% 50%, #0d1828 0%, var(--bg) 80%), var(--bg);
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  /* Panel must have explicit height for SVG height:100% to work */
+  display: flex;
+  flex-direction: column;
+}
+.tab-panel.graph-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: .35;
+  pointer-events: none;
+  z-index: 0;
+}
+.tab-panel.graph-panel #mainGraph {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── TOP ACTIONS CARD ──────────────────────────── */
+.top-actions-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  font-family: var(--mono);
+}
+.top-actions-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.top-actions-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border), transparent);
+}
+.top-action-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(37,49,66,.6);
+}
+.top-action-row:last-child { border-bottom: none; }
+.top-action-rank {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--teal);
+  width: 18px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.top-action-body { flex: 1; min-width: 0; }
+.top-action-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--txt);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.top-action-meta {
+  font-size: 10px;
+  color: var(--txt-dim);
+  line-height: 1.5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.top-action-meta .meta-chip {
+  background: rgba(45,212,191,.08);
+  border: 1px solid rgba(45,212,191,.2);
+  border-radius: 2px;
+  padding: 1px 6px;
+  color: var(--teal);
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.top-action-meta .meta-chip.chip-ebitda { background:rgba(45,212,191,.08); border-color:rgba(45,212,191,.25); color:var(--teal); }
+.top-action-meta .meta-chip.chip-payback { background:rgba(245,158,11,.08); border-color:rgba(245,158,11,.25); color:var(--amber); }
+.top-action-meta .meta-chip.chip-tipo { background:rgba(59,130,246,.08); border-color:rgba(59,130,246,.25); color:var(--blue); }
+.top-actions-empty {
+  font-size: 11px;
+  color: var(--txt-dim);
+  padding: 8px 0;
+  font-style: italic;
+}
+
+/* ── KPI SEMÁFORO ───────────────────────────────── */
+.kpi-state-good { border-left: 3px solid var(--teal);  background: rgba(45,212,191,.07); }
+.kpi-state-warn { border-left: 3px solid var(--amber); background: rgba(245,158,11,.07); }
+.kpi-state-bad  { border-left: 3px solid var(--red);   background: rgba(239,68,68,.07);  }
+.kpi-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+.kpi-dot.good { background:var(--teal);  box-shadow:0 0 8px var(--teal-glow);  }
+.kpi-dot.warn { background:var(--amber); box-shadow:0 0 8px var(--amber-glow); }
+.kpi-dot.bad  { background:var(--red);   box-shadow:0 0 8px var(--red-glow);   }
+
+/* ── PANTALLA INICIAL DE SELECCIÓN DE MODO ──────── */
+#mode-selector {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, #0d1828 0%, var(--bg) 80%),
+    var(--bg);
+}
+#mode-selector .ms-brand {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--teal);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#mode-selector .ms-brand .ms-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 12px var(--teal-glow);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+#mode-selector .ms-title {
+  font-family: var(--sans);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--txt);
+  text-align: center;
+  letter-spacing: -.3px;
+}
+#mode-selector .ms-subtitle {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--txt-dim);
+  text-align: center;
+  margin-top: -20px;
+}
+#mode-selector .ms-cards {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 1200px;
+}
+.ms-card {
+  width: 220px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 28px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+  position: relative;
+}
+.ms-card:hover {
+  border-color: var(--border-hi);
+  background: var(--card-hi);
+}
+.ms-card.ms-publico:hover { border-color: var(--teal); box-shadow: 0 0 24px rgba(45,212,191,.1); }
+.ms-card.ms-privado:hover { border-color: var(--amber); box-shadow: 0 0 24px rgba(245,158,11,.1); }
+.ms-card-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.ms-card-title {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.ms-publico .ms-card-title { color: var(--teal);  }
+.ms-privado .ms-card-title { color: var(--amber); }
+.ms-card-desc {
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--txt-dim);
+  line-height: 1.6;
+  flex: 1;
+}
+.ms-card-btn {
+  margin-top: 4px;
+  width: 100%;
+  padding: 9px 0;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: opacity .15s, transform .1s;
+}
+.ms-card-btn:hover  { opacity: .88; }
+.ms-card-btn:active { transform: scale(.97); }
+.ms-publico .ms-card-btn { background: var(--teal);  color: #05070a; }
+.ms-privado .ms-card-btn { background: var(--amber); color: #05070a; }
+.ms-footer {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--txt-ghost);
+  letter-spacing: .5px;
+  text-align: center;
+}
+/* Chip de modo en topbar */
+#mode-chip {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+#mode-chip:hover { opacity: .75; }
+#mode-chip.chip-pub { background: rgba(45,212,191,.12); color: var(--teal);  border: 1px solid rgba(45,212,191,.3); }
+#mode-chip.chip-prv { background: rgba(245,158,11,.12); color: var(--amber); border: 1px solid rgba(245,158,11,.3); }
+
+</style>
+</head>
+<body>
+
+<!-- ── PANTALLA INICIAL DE SELECCIÓN DE MODO ── -->
+<div id="mode-selector">
+  <div class="ms-brand">
+    <div class="ms-dot"></div>
+    HEALTH<span style="color:var(--txt-dim);font-weight:300">EYE</span>
+    <span style="color:var(--border-hi);font-weight:300">·</span>
+    <span style="font-size:8px;color:var(--txt-dim);font-weight:300;letter-spacing:1px">DECISION INTELLIGENCE</span>
+  </div>
+  <div class="ms-title">¿Qué tipo de institución vas a optimizar?</div>
+  <div class="ms-subtitle">El modelo se ajusta automáticamente según el contexto institucional</div>
+  <div class="ms-cards">
+    <div class="ms-card ms-publico" onclick="setMode('publico')">
+      <div class="ms-card-icon">🏥</div>
+      <div class="ms-card-title">Hospital Público</div>
+      <div class="ms-card-desc">
+        Optimización de listas de espera, uso de pabellones y cumplimiento presupuestario.
+      </div>
+      <button class="ms-card-btn">Optimizar Hospital →</button>
+    </div>
+    <div class="ms-card ms-privado" onclick="setMode('privado')">
+      <div class="ms-card-icon">🏨</div>
+      <div class="ms-card-title">Clínica Privada</div>
+      <div class="ms-card-desc">
+        Maximización de ingresos, productividad quirúrgica y rentabilidad por pabellón.
+      </div>
+      <button class="ms-card-btn">Optimizar Clínica →</button>
+    </div>
+    <div class="ms-card" onclick="window.location.href='./index_qx.html'" style="border-color:var(--blue)">
+      <div class="ms-card-icon">👁️</div>
+      <div class="ms-card-title" style="color:var(--blue)">QX Eye</div>
+      <div class="ms-card-desc">
+        Inteligencia de producción quirúrgica. Análisis de rendimiento y ocupación de quirófanos.
+      </div>
+      <button class="ms-card-btn" style="background:var(--blue);color:white">Explorar QX →</button>
+    </div>
+    <div class="ms-card" onclick="window.location.href='./index_sil.html'" style="border-color:var(--red)">
+      <div class="ms-card-icon">📄</div>
+      <div class="ms-card-title" style="color:var(--red)">SIL Eye</div>
+      <div class="ms-card-desc">
+        Gestión de Licencias Médicas (SIL). Monitoreo de ausentismo e impacto operacional.
+      </div>
+      <button class="ms-card-btn" style="background:var(--red);color:white">Explorar SIL →</button>
+    </div>
+    <div class="ms-card" onclick="window.location.href='./index_lista.html'" style="border-color:var(--amber)">
+      <div class="ms-card-icon">⏳</div>
+      <div class="ms-card-title" style="color:var(--amber)">Lista Eye</div>
+      <div class="ms-card-desc">
+        Priorización inteligente de listas de espera y gestión de demanda quirúrgica.
+      </div>
+      <button class="ms-card-btn" style="background:var(--amber);color:white">Explorar Lista →</button>
+    </div>
+  </div>
+  <div class="ms-footer">HEALTHEYE PRO · DEMO · v2.0 · Datos ficticios para demostración</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     BLOQUE 1 — SKELETON HTML (IDs listos para JS)
+     ══════════════════════════════════════════════════ -->
+
+<div class="app-shell">
+
+  <!-- ── TOPBAR ── -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="dot"></div>
+      HEALTH<span style="color:var(--txt-dim);font-weight:300">EYE</span>
+      <span class="sep">·</span>
+      <span class="sub">DECISION INTELLIGENCE TERMINAL</span>
+    </div>
+
+    <div class="topbar-center">
+      <!-- KPI rápidos — serán poblados por JS en render() -->
+      <div id="topbar-kpis" style="display:flex;gap:20px;align-items:center"></div>
+    </div>
+
+    <!-- FASE 7: Executive Summary chip -->
+    <div id="exec-summary-chip">⬤ INICIALIZANDO…</div>
+
+    <div class="topbar-right">
+      <!-- RESET TOTAL -->
+      <button onclick="resetToBaseline()" title="Volver a valores base" style="background:none;border:1px solid var(--border);color:var(--txt-dim);height:26px;padding:0 10px;border-radius:2px;cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:5px;transition:border-color .15s,color .15s,background .15s;" onmouseover="this.style.borderColor='var(--teal)';this.style.color='var(--teal)';this.style.background='rgba(45,212,191,.06)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--txt-dim)';this.style.background='none'">↺ BASE</button>
+      <!-- FASE 5: CSV Recalibration Upload -->
+      <div id="csv-upload" title="Cargar CSV del hospital (drag & drop o click)">
+        <input type="file" id="csv-file-input" accept=".csv,text/csv">
+        <label for="csv-file-input" class="csv-drop-zone" id="csv-drop-zone">
+          <svg class="csv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <span class="csv-label" id="csv-label-text">CARGAR CSV</span>
+        </label>
+      </div>
+      <div id="bottleneck-badge" class="bottleneck-badge">CUELLO: ···</div>
+      <div id="mode-chip" class="chip-pub" onclick="showModeSelector()" title="Cambiar modo institucional">MODO: PÚBLICO</div>
+    </div>
+  </header>
+
+  <!-- ── TABBAR ── -->
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab-btn="decision" onclick="setActiveTab('decision')">DECISIÓN</button>
+    <button class="tab-btn" data-tab-btn="operaciones" onclick="setActiveTab('operaciones')">OPERACIONES</button>
+    <button class="tab-btn" data-tab-btn="proyeccion" onclick="setActiveTab('proyeccion')">PROYECCIÓN</button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════
+       TAB VIEWS
+       ══════════════════════════════════════════════════ -->
+
+  <!-- ── TAB DECISIÓN ── -->
+  <div id="tab-decision" class="tab-view active">
+    <div class="tab-grid tab-grid-decision">
+
+      <!-- Panel izquierdo: Palancas -->
+      <div class="tab-panel">
+        <aside class="col-levers" style="background:transparent;padding:0;overflow:visible;">
+
+          <div class="sec-title">Eficiencia</div>
+          <div id="group-eficiencia">
+            <!-- Steppers inyectados por buildControlBar() -->
+          </div>
+
+          <div class="sec-title sec-gap">Capacidad</div>
+          <div id="group-capacidad">
+            <!-- Steppers inyectados por buildControlBar() -->
+          </div>
+
+          <!-- FASE 8: Toggle Extensión Horaria -->
+          <div class="ext-toggle-wrap" id="ext-toggle-wrap">
+            <div class="ext-toggle-label">Extensión Horaria</div>
+            <div class="ext-toggle-row">
+              <span class="ext-status" id="ext-status">OFF</span>
+              <button class="ext-toggle-btn" id="ext-toggle-btn" onclick="toggleExtension()"></button>
+            </div>
+          </div>
+
+          <div class="sec-title sec-gap">Demanda</div>
+          <div id="group-demanda">
+            <!-- Steppers inyectados por buildControlBar() -->
+          </div>
+
+        </aside>
+      </div>
+
+      <!-- Panel central: Recomendación + Alertas + KPIs -->
+      <div class="tab-panel">
+        <div class="sec-title">Recomendación Ejecutiva</div>
+        <div id="decision-recommendation"></div>
+        <div id="top-actions"></div>
+
+        <div class="sec-title sec-gap">Decision KPIs</div>
+        <div id="metrics-panel">
+          <!-- KPI cards inyectadas por renderMetrics() -->
+        </div>
+
+        <div class="sec-title sec-gap">Smart Alerts</div>
+        <div id="alerts-panel"></div>
+      </div>
+
+      <!-- Panel derecho: Comparador de Escenarios -->
+      <div class="tab-panel">
+        <div class="sec-title">Comparador de Escenarios</div>
+        <div style="font-family:var(--sans);font-size:8.5px;color:var(--txt-dim);margin-bottom:6px;line-height:1.45">
+          Compara el escenario actual con alternativas de optimización y expansión. Muestra qué gana el hospital en cirugías, resultado operacional y lista de espera si se aplican cada conjunto de mejoras.
+        </div>
+        <div id="scenario-comparator">
+          <!-- Tabla inyectada por renderScenarioComparator() -->
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /tab-decision -->
+
+  <!-- ── TAB OPERACIONES ── -->
+  <div id="tab-operaciones" class="tab-view">
+    <div class="tab-grid tab-grid-operaciones">
+
+      <!-- Panel izquierdo: Grafo causal SVG -->
+      <div class="tab-panel graph-panel">
+        <svg
+          id="mainGraph"
+          viewBox="0 0 980 350"
+          preserveAspectRatio="xMidYMid meet"
+          aria-label="Grafo causal del sistema quirúrgico"
+          role="img"
+          style="width:100%;height:100%;display:block;position:relative;z-index:1;"
+        >
+          <!-- Capas del grafo — pobladas por initGraph() -->
+          <g id="graph-edges"></g>
+          <g id="nodes-layer"></g>
+        </svg>
+      </div>
+
+      <!-- Panel central: Análisis Marginalista -->
+      <div class="tab-panel">
+        <div class="sec-title">
+          Análisis Marginalista
+          <span style="color:var(--txt-dim);font-weight:300;text-transform:none;letter-spacing:0;font-size:8px"> ¿qué intervención conviene más?</span>
+        </div>
+        <div style="font-family:var(--sans);font-size:8.5px;color:var(--txt-dim);margin-bottom:6px;line-height:1.45">
+          Por cada intervención posible: cuánto cuesta implementarla, cuánto cirugías adicionales genera, cuánto mejora el resultado operacional y cuántos meses tarda en recuperar la inversión. Ordena por ROI para ayudar a priorizar.
+        </div>
+        <div id="marginal-table">
+          <!-- Tabla inyectada por renderMarginalTable() -->
+        </div>
+      </div>
+
+      <!-- Panel derecho: Waterfall Financiero -->
+      <div class="tab-panel">
+        <div class="sec-title">
+          Estructura del Resultado
+          <span style="color:var(--txt-dim);font-weight:300;text-transform:none;letter-spacing:0;font-size:8px"> M CLP · ¿de dónde viene cada peso?</span>
+        </div>
+        <div style="font-family:var(--sans);font-size:8.5px;color:var(--txt-dim);margin-bottom:6px;line-height:1.45">
+          Muestra cómo se construye el resultado: qué aporta el presupuesto base, qué generan los aranceles FONASA y cuánto consumen los costos fijos y variables. Si el resultado es negativo, esta barra muestra exactamente dónde se pierde.
+        </div>
+        <div id="financial-waterfall"></div>
+      </div>
+
+    </div>
+  </div><!-- /tab-operaciones -->
+
+  <!-- ── TAB PROYECCIÓN ── -->
+  <div id="tab-proyeccion" class="tab-view">
+    <div class="tab-grid tab-grid-proyeccion">
+
+      <!-- Panel izquierdo: Proyección Lista de Espera -->
+      <div class="tab-panel">
+        <div class="sec-title" id="proj-panel-title">Lista de Espera · Proyección 24 Meses</div>
+        <div style="font-family:var(--sans);font-size:8.5px;color:var(--txt-dim);margin-bottom:4px;line-height:1.45">
+          ¿La lista crece o se reduce con la configuración actual? La pendiente indica si el sistema está absorbiendo o acumulando demanda.
+        </div>
+        <div id="proj-exec-msg" style="
+          font-family:var(--mono);font-size:9px;line-height:1.5;
+          padding:7px 10px;border-radius:3px;margin-bottom:8px;
+          border:1px solid var(--border);background:var(--card);
+          color:var(--txt-dim);
+        "></div>
+        <div id="projection-chart" class="proj-container"></div>
+      </div>
+
+      <!-- Panel central: Análisis de Riesgo -->
+      <div class="tab-panel">
+        <div class="sec-title">Análisis de Riesgo</div>
+        <div id="risk-panel"></div>
+      </div>
+
+      <!-- Panel derecho: Sensibilidad / Tornado -->
+      <div class="tab-panel">
+        <div class="sec-title">Sensibilidad · Tornado</div>
+        <div id="sensitivity-panel"></div>
+      </div>
+
+    </div>
+  </div><!-- /tab-proyeccion -->
+
+</div>
+
+<!-- FASE 7: Tooltip Cadena Causal -->
+<div id="causal-tooltip">
+  <div class="ct-title" id="ct-title"></div>
+  <div class="ct-chain" id="ct-chain"></div>
+</div>
+
+<!-- BLOQUE 2+ — Script vacío: lógica se añade en iteraciones siguientes -->
+<script>
+  // ==========================================
+  // BLOQUE 2: API DE NEGOCIO Y EBITDA
+  // ==========================================
+
+  // ── Modo institucional global ────────────────────────────────────────
+  let APP_MODE = 'publico'; // 'publico' | 'privado'
+  function getMode() { return APP_MODE; }
+  function isPrivado() { return getMode() === 'privado'; }
+
+  const DEFAULT_ASSUMPTIONS = {
+    pabellones_dotados:              6,
+    dias_habiles_mes:                22,
+    horas_turno:                     8,
+    turnos_dia:                      1,
+    costo_rrhh_fijo_mes:             85_000_000,
+    costo_variable_cirugia:          280_000,
+    presupuesto_dipres_mes:          120_000_000,
+    ingreso_por_cirugia:             420_000,
+    demanda_quirurgica_mes:          180,
+    lista_espera_inicial:            1240,
+    camas_postop_default:            20,
+    estancia_media_default:          3.0,
+    arancel_fonasa_default:          420_000,
+    ebitda_label:                    'resultado_operacional_mclp',
+    // ── Modelo económico público (techo de producción) ──────────────────
+    produccion_comprometida_mes:     160,   // cirugías comprometidas en convenio MINSAL
+    factor_pago_sobreproduccion:     0.3,   // fracción del arancel pagada por cx sobre el techo
+    factor_penalidad_subejercicio:   0.0,   // fracción del arancel descontada por cx bajo compromiso
+    // ── Modelo económico privado (mix pagador + revenue por hora) ────────
+    mix_isapre:                      0.5,
+    mix_fonasa_le:                   0.3,
+    mix_particular:                  0.2,
+    precio_isapre:                   900000,
+    precio_fonasa_le:                500000,
+    precio_particular:               700000,
+    costo_hora_pabellon:             150000,
+    duracion_promedio_horas:         1.6,
+  };
+
+  const BASELINE_ASSUMPTIONS = Object.freeze({ ...DEFAULT_ASSUMPTIONS });
+  let ACTIVE_ASSUMPTIONS = { ...BASELINE_ASSUMPTIONS };
+
+  const SCENARIOS = {
+    base:       { pabellones_activos:4, suspension:15, duracion_media:95, recambio:20, ocupacion:78, arancel_fonasa:420000, demanda_mes:180, camas_disponibles:20, estancia_media_dias:3.0 },
+    optimizado: { pabellones_activos:4, suspension:8,  duracion_media:90, recambio:15, ocupacion:88, arancel_fonasa:420000, demanda_mes:180, camas_disponibles:25, estancia_media_dias:2.5 },
+    expansion:  { pabellones_activos:6, suspension:10, duracion_media:90, recambio:18, ocupacion:85, arancel_fonasa:420000, demanda_mes:180, camas_disponibles:30, estancia_media_dias:2.8 }
+  };
+
+  let currentInputs = { ...SCENARIOS.base };
+
+  // ==========================================
+  // BLOQUE 3: GRAFO REACTIVO E IDs DE NODO
+  // ==========================================
+
+  // Nodos del grafo — coordenadas adaptadas al viewBox 980×350 del skeleton
+  const NODES = [
+    { id: 'h_efectivas',               label: 'HORAS EFECT.',   unit: 'h',      x: 155, y: 175 },
+    { id: 'cap_pab',                   label: 'CAP.PABELLÓN',   unit: 'cx/mes', x: 390, y:  88 },
+    { id: 'cap_camas',                 label: 'CAP.CAMAS',      unit: 'cx/mes', x: 390, y: 268 },
+    { id: 'cirugias_mes',              label: 'PRODUCCIÓN',     unit: 'cx/mes', x: 630, y: 175 },
+    { id: 'delta_lista',               label: 'Δ LISTA',        unit: 'casos',  x: 840, y:  90 },
+    { id: 'resultado_operacional_mclp',label: 'RESULTADO OP.',  unit: 'M CLP',  x: 840, y: 265 }
+  ];
+  const EDGES = [
+    ['h_efectivas','cap_pab'], ['h_efectivas','cap_camas'],
+    ['cap_pab','cirugias_mes'], ['cap_camas','cirugias_mes'],
+    ['cirugias_mes','delta_lista'], ['cirugias_mes','resultado_operacional_mclp']
+  ];
+  const NM = Object.fromEntries(NODES.map(n => [n.id, n]));
+  const NR = 40;
+
+  // Motor causal — versión Bloque 3 (destructuring + arancel dinámico)
+  function simulate(inputs, a = ACTIVE_ASSUMPTIONS) {
+    const {
+      pabellones_activos, suspension, duracion_media, recambio, ocupacion,
+      demanda_mes,
+      camas_disponibles   = a.camas_postop_default,
+      estancia_media_dias = a.estancia_media_default
+    } = inputs;
+
+    const factor_extension    = inputs._modo_extension ? 1.5 : 1.0;
+    const horas_brutas        = pabellones_activos * a.horas_turno * a.turnos_dia * a.dias_habiles_mes * factor_extension;
+    const h_efectivas         = horas_brutas * (ocupacion / 100) * (1 - suspension / 100);
+    const cap_pab             = Math.floor(h_efectivas * 60 / (duracion_media + recambio));
+    const cap_camas           = Math.floor((camas_disponibles * a.dias_habiles_mes) / estancia_media_dias);
+    const cirugias_mes        = Math.min(cap_pab, cap_camas);
+
+    const delta_lista         = demanda_mes - cirugias_mes;
+    const cuello              = cap_pab <= cap_camas ? 'PABELLÓN' : 'CAMAS';
+
+    // Costos y presupuesto — necesarios para calculatePublicEconomics
+    const costo_fijo      = a.costo_rrhh_fijo_mes;
+    const costo_variable  = cirugias_mes * a.costo_variable_cirugia;
+    const presupuesto_base = a.presupuesto_dipres_mes;
+
+    return {
+      h_efectivas,
+      cap_pab,
+      cap_camas,
+      cirugias_mes,
+      delta_lista,
+      cuello,                    // legacy key
+      cuello_de_botella: cuello, // API primaria
+      lista_espera_stock: a.lista_espera_inicial + delta_lista,
+      // Económicos — consumidos por calculatePublicEconomics
+      costo_fijo,
+      costo_variable,
+      presupuesto_base
+    };
+  }
+
+  /**
+   * projectWaitlist — proyecta la lista de espera mes a mes.
+   * @param {object} inputs   — mismo objeto que recibe simulate()
+   * @param {number} months   — horizonte de proyección (default 24)
+   * @param {object} a        — assumptions (default DEFAULT_ASSUMPTIONS)
+   * @returns {{ serie: Array<{month,stock}>, cierre_en_mes: number|null, converge: boolean }}
+   */
+  function projectWaitlist(inputs, months = 24, a = ACTIVE_ASSUMPTIONS) {
+    let stock = a.lista_espera_inicial;
+    const serie = [];
+
+    for (let m = 0; m <= months; m++) {
+      const r = simulate(inputs, a);
+      if (m > 0) stock = Math.max(0, stock + r.delta_lista);
+
+      serie.push({ month: m, stock });
+
+      if (stock <= 0) {
+        return { serie, cierre_en_mes: m, converge: true };
+      }
+    }
+    return { serie, cierre_en_mes: null, converge: false };
+  }
+
+  /**
+   * getWaitlistClosureMessage — texto ejecutivo del resultado de proyección.
+   * @param {object} p — resultado de projectWaitlist()
+   * @returns {string}
+   */
+  function getWaitlistClosureMessage(p) {
+    if (!p.converge) return 'NO CIERRA';
+    return `CIERRA EN ${p.cierre_en_mes} MESES`;
+  }
+
+  // Inicialización del grafo (una sola vez al cargar)
+  function initGraph() {
+    const svg        = document.getElementById('mainGraph');
+    const edgeLayer  = document.getElementById('graph-edges');
+    const nodeLayer  = document.getElementById('nodes-layer');
+    if (!svg || !nodeLayer) return;
+
+    const NS = 'http://www.w3.org/2000/svg';
+
+    // Flecha marker
+    const defs = document.createElementNS(NS, 'defs');
+    defs.innerHTML = `<marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3"
+        orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L7,3 Z" fill="var(--border-hi)"/>
+    </marker>`;
+    svg.insertBefore(defs, svg.firstChild);
+
+    // Aristas
+    if (edgeLayer) {
+      EDGES.forEach(([from, to]) => {
+        const f = NM[from], t = NM[to];
+        const line = document.createElementNS(NS, 'line');
+        line.setAttribute('id',     `edge-${from}-${to}`);
+        line.setAttribute('x1',     f.x); line.setAttribute('y1', f.y);
+        line.setAttribute('x2',     t.x); line.setAttribute('y2', t.y);
+        line.setAttribute('stroke', 'var(--border-hi)');
+        line.setAttribute('stroke-width', '1.5');
+        line.setAttribute('marker-end', 'url(#arrow)');
+        edgeLayer.appendChild(line);
+      });
+    }
+
+    // Nodos
+    nodeLayer.innerHTML = '';
+    NODES.forEach(n => {
+      const g = document.createElementNS(NS, 'g');
+      g.setAttribute('transform', `translate(${n.x},${n.y})`);
+
+      const circle = document.createElementNS(NS, 'circle');
+      circle.setAttribute('id', `node-circle-${n.id}`);
+      circle.setAttribute('r',  NR);
+      circle.setAttribute('class', 'node-circle glow-accent');
+
+      const lbl = document.createElementNS(NS, 'text');
+      lbl.setAttribute('y', -(NR + 10));
+      lbl.setAttribute('text-anchor', 'middle');
+      lbl.setAttribute('class', 'node-label');
+      lbl.textContent = n.label;
+
+      const val = document.createElementNS(NS, 'text');
+      val.setAttribute('id', `node-val-${n.id}`);
+      val.setAttribute('y', '5');
+      val.setAttribute('text-anchor', 'middle');
+      val.setAttribute('class', 'node-val');
+      val.textContent = '–';
+
+      const unit = document.createElementNS(NS, 'text');
+      unit.setAttribute('y', '18');
+      unit.setAttribute('text-anchor', 'middle');
+      unit.setAttribute('class', 'node-label');
+      unit.setAttribute('fill', 'var(--txt-dim)');
+      unit.setAttribute('font-size', '7px');
+      unit.textContent = n.unit;
+
+      g.appendChild(circle); g.appendChild(lbl);
+      g.appendChild(val);    g.appendChild(unit);
+      nodeLayer.appendChild(g);
+    });
+  }
+
+  // Renderizado incremental — solo textContent y clases, sin redibujar SVG
+  // NOTA: el grafo muestra la REALIDAD ESTRUCTURAL (cuello de botella físico).
+  // Nunca cambia de color al cambiar pestaña financiero/sanitario — eso sería confuso.
+  function renderGraph(r, eco) {
+    NODES.forEach(n => {
+      const textEl   = document.getElementById(`node-val-${n.id}`);
+      const circleEl = document.getElementById(`node-circle-${n.id}`);
+      if (!textEl || !circleEl) return;
+
+      // Valor formateado — resultado financiero viene de eco, no de simulate()
+      if (n.id === 'resultado_operacional_mclp') {
+        const v = eco ? eco.resultado_mes : 0;
+        textEl.textContent = (v >= 0 ? '+' : '') + v.toFixed(1) + 'M';
+      } else {
+        const v = r[n.id];
+        textEl.textContent = Math.round(v);
+      }
+
+      // Cuello de botella: ámbar pulsante — fijo, basado solo en capacidad física.
+      // NO cambia según pestaña activa del panel lateral. El grafo muestra realidad, no métricas.
+      const isCuello = (n.id === 'cap_pab'   && r.cuello === 'PABELLÓN') ||
+                       (n.id === 'cap_camas'  && r.cuello === 'CAMAS');
+
+      // Limpiar todas las clases de estado antes de aplicar
+      circleEl.classList.remove('glow-amber', 'glow-accent', 'glow-red', 'pulse', 'node-critical-alert');
+
+      if (isCuello) {
+        circleEl.classList.add('glow-amber', 'pulse');
+      } else {
+        circleEl.classList.add('glow-accent');
+      }
+    });
+
+    // Badge topbar
+    const badge = document.getElementById('bottleneck-badge');
+    if (badge) {
+      badge.textContent = `CUELLO: ${r.cuello}`;
+      badge.style.background = r.cuello === 'CAMAS' ? 'var(--amber)' : 'rgba(59,130,246,.25)';
+      badge.style.color      = r.cuello === 'CAMAS' ? '#000'         : 'var(--blue)';
+      badge.style.border     = `1px solid ${r.cuello === 'CAMAS' ? 'var(--amber)' : 'var(--blue)'}`;
+    }
+  }
+
+  // ==========================================
+  // BLOQUE 5A: LEVER COSTS — Costo de implementación por palanca
+  // Escala: costo_mes en CLP (orden de magnitud referencial MINSAL/FONASA)
+  // tipo_costo: 'gestion' | 'opex' | 'capex'
+  // ==========================================
+  const LEVER_COSTS = {
+    suspension: {
+      label_costo:   'Gestión / Protocolo',
+      tipo_costo:    'gestion',
+      costo_impl:    500_000,          // Capacitación + reuniones + 1 mes gestión
+      costo_mes:     150_000,          // Mantención protocolar mensual
+      descripcion:   'Reducir tasa de suspensión quirúrgica en 5 pp mediante protocolo de confirmación 48h'
+    },
+    ocupacion: {
+      label_costo:   'OPEX Leve',
+      tipo_costo:    'opex',
+      costo_impl:    1_200_000,        // Incentivo productividad + revisión agendamiento
+      costo_mes:     400_000,
+      descripcion:   'Subir ocupación efectiva de pabellones mediante optimización de agenda y lista de espera activa'
+    },
+    duracion_media: {
+      label_costo:   'OPEX / Capacitación',
+      tipo_costo:    'opex',
+      costo_impl:    2_000_000,        // Lean quirúrgico + capacitación equipo
+      costo_mes:     300_000,
+      descripcion:   'Reducir duración media de cirugía 5 min mediante estandarización de técnica y set quirúrgico'
+    },
+    recambio: {
+      label_costo:   'OPEX / Proceso',
+      tipo_costo:    'opex',
+      costo_impl:    1_500_000,        // Rediseño flujo de recambio + personal auxiliar
+      costo_mes:     500_000,
+      descripcion:   'Reducir tiempo de recambio entre cirugías 5 min con protocolo de limpieza paralela'
+    },
+    camas_disponibles: {
+      label_costo:   'CAPEX + RRHH',
+      tipo_costo:    'capex',
+      costo_impl:    18_000_000,       // Habilitación infraestructura + equipamiento 5 camas
+      costo_mes:     3_500_000,        // Personal de enfermería adicional
+      descripcion:   'Habilitar 5 camas post-operatorias adicionales (infraestructura + dotación enfermería)'
+    },
+    pabellones_activos: {
+      label_costo:   'CAPEX Mayor',
+      tipo_costo:    'capex',
+      costo_impl:    120_000_000,      // Habilitación pabellón completo (equipamiento + remodelación)
+      costo_mes:     12_000_000,       // RRHH cirujano, anestesista, arsenalero, técnicos
+      descripcion:   'Apertura de 1 pabellón quirúrgico adicional con dotación completa de turno'
+    }
+  };
+
+  /**
+   * findMinDelta — encuentra el mínimo cambio en una palanca que genera +1 cx/mes.
+   * Busca de a pequeños pasos hasta que cirugias_mes suba en ≥1, o alcanza el límite.
+   * @returns { delta, newInputs, result } | null si no hay impacto posible
+   */
+  function findMinDelta(inputs, key, direction, stepSize, limit, a) {
+    const base = simulate(inputs, a);
+    const cur  = inputs[key];
+    let   tried = 0;
+    const maxSteps = Math.ceil(Math.abs(limit - cur) / stepSize) + 1;
+    for (let n = 1; n <= maxSteps; n++) {
+      const candidate = cur + direction * stepSize * n;
+      if (direction > 0 && candidate > limit) break;
+      if (direction < 0 && candidate < limit) break;
+      const r = simulate({ ...inputs, [key]: candidate }, a);
+      if (r.cirugias_mes > base.cirugias_mes) {
+        return { delta: candidate - cur, newInputs: { ...inputs, [key]: candidate }, result: r };
+      }
+    }
+    return null;
+  }
+
+  function calculateMarginalImpacts(inputs, a = ACTIVE_ASSUMPTIONS) {
+    const base = simulate(inputs, a);
+
+    // Definición de palancas: dirección, paso mínimo de búsqueda, límite físico
+    const LEVERS = [
+      { id:'suspension',         dir:-1, step:1,   limit:0,   horiz:30,  blockedByCamas:true  },
+      { id:'ocupacion',          dir: 1, step:1,   limit:98,  horiz:60,  blockedByCamas:true  },
+      { id:'camas_disponibles',  dir: 1, step:1,   limit:100, horiz:15,  blockedByCamas:false },
+      { id:'duracion_media',     dir:-1, step:1,   limit:20,  horiz:90,  blockedByCamas:true  },
+      { id:'recambio',           dir:-1, step:1,   limit:0,   horiz:45,  blockedByCamas:true  },
+      { id:'pabellones_activos', dir: 1, step:1,   limit:12,  horiz:180, blockedByCamas:true  }
+    ];
+    const esCamas = base.cuello_de_botella === 'CAMAS';
+
+    // Unidades legibles por palanca
+    const UNITS = {
+      suspension:        '%',
+      ocupacion:         '%',
+      camas_disponibles: ' camas',
+      duracion_media:    ' min',
+      recambio:          ' min',
+      pabellones_activos:''
+    };
+    const LABEL_BASE = {
+      suspension:        'Bajar Suspensión',
+      ocupacion:         'Subir Ocupación',
+      camas_disponibles: 'Más Camas',
+      duracion_media:    'Reducir Duración',
+      recambio:          'Reducir Recambio',
+      pabellones_activos:'Abrir Pabellón'
+    };
+
+    const results = LEVERS.map(l => {
+      const found    = findMinDelta(inputs, l.id, l.dir, l.step, l.limit, a);
+      const t        = found ? found.result : simulate(inputs, a);  // sin cambio si no hay impacto
+      const costs    = LEVER_COSTS[l.id] || { costo_impl: 1, costo_mes: 0, tipo_costo: 'gestion', label_costo: '—' };
+      const _ecoBase = calculateEconomics(base, inputs, a);
+      const _ecoT    = calculateEconomics(t,    found ? found.newInputs : inputs, a);
+      const dEbitda  = _ecoT.resultado_mes - _ecoBase.resultado_mes;
+      const dEbitdaClp = dEbitda * 1_000_000;
+      const noImpact = !found || Math.abs(t.cirugias_mes - base.cirugias_mes) < 0.5;
+      const blocked  = noImpact || (esCamas && l.blockedByCamas && Math.abs(t.cirugias_mes - base.cirugias_mes) < 0.5);
+
+      // Construir label dinámico con el delta exacto encontrado
+      const unit   = UNITS[l.id] || '';
+      const delta  = found ? Math.abs(Math.round(found.delta)) : null;
+      const sign   = l.dir > 0 ? '+' : '−';
+      const label  = delta !== null
+        ? LABEL_BASE[l.id] + ' ' + sign + delta + unit
+        : LABEL_BASE[l.id] + ' (sin margen)';
+
+      // ROI = ΔEBITDAmes / costo_mes   (adimensional, veces)
+      // Payback = costo_impl / ΔEBITDAmes   (meses)
+      const roi_mensual   = costs.costo_mes > 0 ? dEbitdaClp / costs.costo_mes : null;
+      const payback_meses = dEbitdaClp > 0 ? costs.costo_impl / dEbitdaClp : null;
+
+      // Eficiencia 0-4 barras:
+      // ROI ≥ 3  → 4 barras verde brillante (excelente)
+      // ROI 1–3  → 3 barras verde
+      // ROI 0–1  → 2 barras ámbar
+      // ROI < 0 o nulo → 1 barra roja / gris
+      let eficiencia_nivel, eficiencia_color;
+      if (roi_mensual === null || blocked) {
+        eficiencia_nivel = 0; eficiencia_color = 'blocked';
+      } else if (roi_mensual >= 3) {
+        eficiencia_nivel = 4; eficiencia_color = 'high';
+      } else if (roi_mensual >= 1) {
+        eficiencia_nivel = 3; eficiencia_color = 'high';
+      } else if (roi_mensual >= 0) {
+        eficiencia_nivel = 2; eficiencia_color = 'mid';
+      } else {
+        eficiencia_nivel = 1; eficiencia_color = 'low';
+      }
+
+      // Smart label: palanca bloqueada pero con alto potencial = Prioridad Crítica
+      const prioridad_critica = blocked && Math.abs(dEbitda) >= 0.3;
+
+      return {
+        label,
+        key:            l.id,
+        delta_lista:    t.delta_lista   - base.delta_lista,
+        delta_ebitda:   dEbitda,
+        delta_volumen:  t.cirugias_mes  - base.cirugias_mes,
+        tipo_palanca:   l.horiz <= 30 ? 'quick_win' : 'estructural',
+        horizonte_dias: l.horiz,
+        blocked,
+        // económicos
+        costo_impl:       costs.costo_impl,
+        costo_mes:        costs.costo_mes,
+        tipo_costo:       costs.tipo_costo,
+        label_costo:      costs.label_costo,
+        roi_mensual,
+        payback_meses,
+        eficiencia_nivel,
+        eficiencia_color,
+        prioridad_critica
+      };
+    }).sort((a, b) => {
+      // Primero no-bloqueadas, luego por ROI descendente, luego por |delta_lista|
+      if (a.blocked !== b.blocked) return a.blocked ? 1 : -1;
+      const roiA = a.roi_mensual ?? -Infinity;
+      const roiB = b.roi_mensual ?? -Infinity;
+      return roiB !== roiA ? roiB - roiA : Math.abs(b.delta_lista) - Math.abs(a.delta_lista);
+    });
+
+    return results;
+  }
+
+  function compareScenarios(keys, a = ACTIVE_ASSUMPTIONS) {
+    const baseInputs = SCENARIOS.base;
+    const baseR      = simulate(baseInputs, a);
+    const ecoBase    = calculateEconomics(baseR, baseInputs, a);
+    const scenarioKeys = ['base', 'actual', ...keys.filter(k => k !== 'base' && k !== 'actual')];
+    return scenarioKeys.map(k => {
+      const inputs = k === 'actual' ? currentInputs : (SCENARIOS[k] || currentInputs);
+      const r      = simulate(inputs, a);
+      const _eco   = calculateEconomics(r, inputs, a);
+      return {
+        key:                        k,
+        cirugias_mes:               r.cirugias_mes,
+        delta_lista:                r.delta_lista,
+        resultado_operacional_mclp: _eco.resultado_mes,
+        cuello:                     r.cuello_de_botella,
+        delta_ebitda:               parseFloat((_eco.resultado_mes - ecoBase.resultado_mes).toFixed(2)),
+        delta_cx_vs_base:           r.cirugias_mes - baseR.cirugias_mes,
+        delta_volumen:              r.cirugias_mes - baseR.cirugias_mes,
+        stock_lista:                r.lista_espera_stock,
+        is_base:                    k === 'base',
+        is_actual:                  k === 'actual'
+      };
+    });
+  }
+
+  function runScenario(key, a = ACTIVE_ASSUMPTIONS) {
+    const inputs = SCENARIOS[key] || currentInputs;
+    const r      = simulate(inputs, a);
+    const eco    = calculateEconomics(r, inputs, a);
+    return { key, inputs, ...r, eco };
+  }
+
+  function runAllScenarios(a = ACTIVE_ASSUMPTIONS) {
+    const keys = [...Object.keys(SCENARIOS), 'actual'];
+    return keys.map(k => runScenario(k, a));
+  }
+
+  // ==========================================
+  // BLOQUE 4: ORQUESTADOR & SMART ALERTS
+  // ==========================================
+
+  const STEPPERS = [
+    { key:'suspension',          label:'Suspensión',   group:'eficiencia', min:0,   max:45,  step:1,   unit:'%'  },
+    { key:'ocupacion',           label:'Ocupación',    group:'eficiencia', min:40,  max:98,  step:1,   unit:'%'  },
+    { key:'duracion_media',      label:'Duración',     group:'eficiencia', min:40,  max:240, step:5,   unit:'min'},
+    { key:'recambio',            label:'Recambio',     group:'eficiencia', min:0,   max:60,  step:5,   unit:'min'},
+    { key:'pabellones_activos',  label:'Pabellones',   group:'capacidad',  min:1,   max:12,  step:1,   unit:''   },
+    { key:'camas_disponibles',   label:'Camas Postop', group:'capacidad',  min:2,   max:100, step:1,   unit:''   },
+    { key:'estancia_media_dias', label:'Estancia',     group:'capacidad',  min:0.5, max:15,  step:0.5, unit:'d'  },
+    { key:'demanda_mes',         label:'Demanda',      group:'demanda',    min:10,  max:500, step:10,  unit:''   }
+  ];
+
+  function buildControlBar() {
+    STEPPERS.forEach(s => {
+      const container = document.getElementById(`group-${s.group}`);
+      if (!container) return;
+      const card = document.createElement('div');
+      card.className = 'lever-card';
+      card.innerHTML = `
+        <div class="lever-label">${s.label}</div>
+        <div class="lever-row">
+          <button class="step-btn" onclick="updateVal('${s.key}',${-s.step},${s.min},${s.max})">−</button>
+          <span id="lbl-${s.key}" class="step-val">${currentInputs[s.key]}${s.unit}</span>
+          <button class="step-btn" onclick="updateVal('${s.key}',${s.step},${s.min},${s.max})">+</button>
+        </div>`;
+      container.appendChild(card);
+    });
+  }
+
+  // ==========================================
+  // FASE 3A: RECOMENDADOR EJECUTIVO
+  // ==========================================
+
+  function getDecisionRecommendation(inputs) {
+    inputs = inputs || currentInputs;
+    const r          = simulate(inputs);
+    const impacts    = calculateMarginalImpacts(inputs);
+    const projection = projectWaitlist(inputs, 24);
+
+    // Acción: top-1 del ranking data-driven de calculateMarginalImpacts()
+    // (ordenado por ROI desc, ya filtra bloqueadas internamente)
+    const action = impacts.find(x => !x.blocked && x.delta_volumen > 0) || null;
+
+    if (!action) {
+      return {
+        level:   'neutral',
+        title:   'Sin palanca dominante identificada',
+        message: 'No existe una palanca incremental clara con impacto positivo bajo la configuracion actual. Revise los supuestos o amplie capacidad base.'
+      };
+    }
+
+    const deficit   = Math.round(r.delta_lista);
+    const impactoCx = Math.round(action.delta_volumen);
+    const cobertura = deficit > 0 ? Math.round((impactoCx / deficit) * 100) : 100;
+    const payback   = action.payback_meses ? action.payback_meses.toFixed(1) + ' meses' : 'no estimable';
+
+    let proyMsg;
+    if (projection.converge) {
+      proyMsg = 'Con la configuracion actual la lista cierra en ' + projection.cierre_en_mes + ' meses.';
+    } else {
+      const stockFinal = Math.round(projection.serie[projection.serie.length - 1].stock);
+      proyMsg = 'Sin accion la lista acumulara ' + stockFinal + ' casos en 24m. Esta palanca cubre el '
+              + cobertura + '% del deficit mensual; se requieren palancas adicionales para cerrar la brecha.';
+    }
+
+    return {
+      level:   r.delta_lista > 0 ? 'critical' : 'positive',
+      title:   'Primera palanca recomendada: ' + action.label,
+      message: 'Deficit actual: +' + deficit + ' cx/mes'
+             + ' · Primera palanca recomendada: ' + action.label
+             + ' → +' + impactoCx + ' cx/mes (' + cobertura + '% del deficit)'
+             + ' · Payback: ' + payback
+             + ' · Δ resultado: ' + action.delta_ebitda.toFixed(1) + 'M CLP/mes'
+             + ' · ' + proyMsg
+    };
+  }
+
+  function renderDecisionRecommendation(vm, eco, inputs) {
+    const el = document.getElementById('decision-recommendation');
+    if (!el) return;
+
+    if (vm.decisionOverride) {
+      el.innerHTML =
+        '<div class="decision-card decision-' + vm.decisionOverride.level + '">' +
+          '<div class="decision-title">' + vm.decisionOverride.title + '</div>' +
+          '<div class="decision-msg">'  + vm.decisionOverride.message + '</div>' +
+        '</div>';
+      return;
+    }
+
+    const rec = getDecisionRecommendation(inputs);
+    const costoNoActuar = eco && eco.recommendation && eco.recommendation.costo_no_actuar > 0
+      ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);
+                     font-family:var(--mono);font-size:10px;color:var(--red);font-weight:700">
+           Costo de no actuar: +${eco.recommendation.costo_no_actuar.toFixed(1)}M CLP/mes en lista sin resolver
+         </div>`
+      : '';
+    el.innerHTML =
+      '<div class="decision-card decision-' + rec.level + '">' +
+        '<div class="decision-title">' + rec.title + '</div>' +
+        '<div class="decision-msg">'  + rec.message + '</div>' +
+        costoNoActuar +
+      '</div>';
+  }
+
+  function renderMetrics(vm, eco) {
+    // ── Topbar KPIs (siempre del sim result — sin economía) ─────────────
+    const el = document.getElementById('topbar-kpis');
+    if (!el) return;
+    const lblBacklog = vm.labels.lblBacklog;
+    const lblResult  = vm.labels.lblResult;
+    const lblProd    = vm.labels.lblProd;
+    const dClr = vm.delta_lista > 0 ? 'var(--red)' : 'var(--teal)';
+    const rClr = eco.resultado_mes >= 0 ? 'var(--teal)' : 'var(--red)';
+    el.innerHTML = `
+      <div class="kpi-mini"><div class="kpi-mini-label">${lblProd}</div>
+        <div class="val-mono">${vm.cirugias_mes} <small>cx</small></div></div>
+      <div class="kpi-mini"><div class="kpi-mini-label">${lblBacklog}</div>
+        <div class="val-mono" style="color:${dClr}">${vm.delta_lista > 0 ? '+' : ''}${Math.round(vm.delta_lista)}</div></div>
+      <div class="kpi-mini"><div class="kpi-mini-label">${lblResult}</div>
+        <div class="val-mono" style="color:${rClr}">${eco.resultado_mes.toFixed(1)}M</div></div>
+      <div class="kpi-mini"><div class="kpi-mini-label">CUELLO</div>
+        <div class="val-mono" style="color:var(--amber)">${vm.cuello}</div></div>`;
+
+    // ── Decision KPIs panel — consume contrato eco/vm ───────────────────
+    const kpiPanel = document.getElementById('metrics-panel');
+    if (!kpiPanel) return;
+
+    const kpisToShow = vm.kpisOverride || eco.kpis;
+
+    kpiPanel.innerHTML = kpisToShow.map(k => `
+      <div class="kpi-card kpi-state-${k.state}">
+        <div class="kpi-label" style="display:flex;align-items:center;"><span class="kpi-dot ${k.state}"></span>${k.label}</div>
+        <div class="kpi-val" style="color:${k.valColor}">${k.val}<span class="kpi-unit">${k.unit}</span></div>
+      </div>`).join('');
+  }
+
+  function renderTopActions(inputs, vm) {
+    const el = document.getElementById('top-actions');
+    if (!el) return;
+
+    const impacts = calculateMarginalImpacts(inputs);
+    // Top 3: solo no bloqueadas y con delta_volumen > 0, ordenadas por delta_ebitda desc
+    const top3 = impacts
+      .filter(i => !i.blocked && i.delta_volumen > 0)
+      .sort((a, b) => {
+        // 1. Mayor delta_volumen primero
+        if (b.delta_volumen !== a.delta_volumen) return b.delta_volumen - a.delta_volumen;
+        // 2. Menor payback (más rápido) primero; null va al final
+        const pbA = a.payback_meses ?? Infinity;
+        const pbB = b.payback_meses ?? Infinity;
+        if (pbA !== pbB) return pbA - pbB;
+        // 3. Mayor delta_ebitda primero
+        return b.delta_ebitda - a.delta_ebitda;
+      })
+      .slice(0, 3);
+
+    if (top3.length === 0) {
+      el.innerHTML = `
+        <div class="top-actions-card">
+          <div class="top-actions-title">Top Acciones Recomendadas</div>
+          <div class="top-actions-empty">No hay palancas incrementales relevantes bajo la configuración actual.</div>
+        </div>`;
+      return;
+    }
+
+    const TIPO_LABEL = { gestion: 'Gestión', opex: 'OPEX', capex: 'CAPEX' };
+    const lblEbitda  = vm.labels.topActionsEbitdaLabel;
+    const lblPayback = vm.labels.topActionsPaybackLabel;
+
+    const rows = top3.map((i, idx) => {
+      const cx      = '+' + Math.round(i.delta_volumen) + ' cx/mes';
+      const ebitda  = (i.delta_ebitda >= 0 ? '+' : '') + i.delta_ebitda.toFixed(1) + 'M CLP/mes';
+      const payback = i.payback_meses !== null
+        ? (i.payback_meses < 1 ? '<1 mes' : i.payback_meses.toFixed(1) + ' meses')
+        : 'n/e';
+      const tipo    = TIPO_LABEL[i.tipo_costo] || i.tipo_costo;
+
+      return `<div class="top-action-row">
+        <div class="top-action-rank">${idx + 1}.</div>
+        <div class="top-action-body">
+          <div class="top-action-title">${i.label}</div>
+          <div class="top-action-meta">
+            <span class="meta-chip">${cx}</span>
+            <span class="meta-chip chip-ebitda">${lblEbitda} ${ebitda}</span>
+            <span class="meta-chip chip-payback">${lblPayback} ${payback}</span>
+            <span class="meta-chip chip-tipo">${tipo}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="top-actions-card">
+        <div class="top-actions-title">Top Acciones Recomendadas</div>
+        ${rows}
+      </div>`;
+  }
+
+  function renderAlerts(vm, eco, inputs) {
+    const el = document.getElementById('alerts-panel');
+    if (!el) return;
+
+    if (vm.alertsOverride) {
+      el.innerHTML = vm.alertsOverride.map(a => {
+        const chipClass = a.type === 'alert' ? 'chip-alert' : a.type === 'warn' ? 'chip-warn' : 'chip-good';
+        const dotClass  = a.type === 'alert' ? 'dot-alert'  : a.type === 'warn' ? 'dot-warn'  : 'dot-good';
+        return `<div class="alert-chip ${chipClass}">
+          <div class="alert-dot ${dotClass}"></div>
+          <span>${a.msg}</span>
+        </div>`;
+      }).join('');
+      return;
+    }
+
+    // ── Alertas modo público ─────────────────────────────────────────────
+    const impacts    = calculateMarginalImpacts(inputs);
+    const projection = projectWaitlist(inputs, 24);
+    const deficit    = Math.max(1, Math.round(Math.abs(vm.delta_lista)));
+    const best       = impacts.find(x => !x.blocked && x.delta_volumen > 0);
+
+    const alerts = [];
+
+    const lblLista  = 'Lista';
+    const lblResult = 'Resultado operacional';
+
+    // Alerta 1: déficit de producción
+    if (vm.delta_lista > 0 && best) {
+      const payback    = best.payback_meses ? `${best.payback_meses.toFixed(1)}m` : 'n/a';
+      const impactoPct = Math.round((best.delta_volumen / deficit) * 100);
+      alerts.push({
+        impact: best.delta_volumen,
+        type:   'alert',
+        msg:    `Deficit: +${deficit} cx/mes · Primera palanca: ${best.label} · +${Math.round(best.delta_volumen)} cx/mes (${impactoPct}% del deficit) · Payback: ${payback}`
+      });
+    }
+
+    // Alerta 2: proyección a 24m
+    if (!projection.converge) {
+      const stockFinal  = Math.round(projection.serie[projection.serie.length - 1].stock);
+      const impactoPct  = deficit > 0 ? Math.round((vm.delta_lista / deficit) * 100) : 100;
+      alerts.push({
+        impact: vm.delta_lista * 10,
+        type:   'warn',
+        msg:    `${lblLista} crece +${Math.round(vm.delta_lista)} casos/mes → ${stockFinal} acumulados en 24m. Impacto: ${Math.min(impactoPct, 100)}% del problema`
+      });
+    } else {
+      alerts.push({
+        impact: -999,
+        type:   'good',
+        msg:    `${lblLista} cierra en ${projection.cierre_en_mes} meses al ritmo actual. Sistema equilibrado`
+      });
+    }
+
+    // Alerta 3: alertas económicas desde capa de negocio
+    if (eco && eco.alerts) {
+      eco.alerts.forEach(a => alerts.push({ impact: a.type === 'alert' ? 80 : 40, type: a.type, msg: a.msg }));
+    }
+
+    // Alerta 4: resultado negativo (solo si no viene ya de eco)
+    if (eco.resultado_mes < 0 && !eco.alerts.some(a => a.msg.includes('déficit') || a.msg.includes('negativo'))) {
+      alerts.push({
+        impact: Math.abs(eco.resultado_mes) * 5,
+        type:   'alert',
+        msg:    `${lblResult}: ${eco.resultado_mes.toFixed(1)}M CLP — en déficit.`
+      });
+    }
+
+    if (alerts.length === 0) {
+      alerts.push({ impact: 0, type: 'good', msg: 'Sistema equilibrado · Sin alertas activas' });
+    }
+
+    alerts.sort((a, b) => b.impact - a.impact);
+
+    el.innerHTML = alerts.map((a, i) => {
+      const chipClass = i === 0 ? 'chip-alert' : i === 1 ? 'chip-warn' : 'chip-neutral';
+      const dotClass  = i === 0 ? 'dot-alert'  : i === 1 ? 'dot-warn'  : 'dot-neutral';
+      return `<div class="alert-chip ${chipClass}">
+        <div class="alert-dot ${dotClass}"></div>
+        <span>${a.msg}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderMarginalTable(vm, inputs) {
+    const el = document.getElementById('marginal-table');
+    if (!el) return;
+    const impacts = calculateMarginalImpacts(inputs);
+    const cuelloActual = simulate(inputs).cuello_de_botella;
+
+    // Helper: barras de intensidad ROI
+    function roiBars(nivel, color) {
+      const TOTAL = 4;
+      const colors = {
+        high:    'var(--teal)',
+        mid:     'var(--amber)',
+        low:     'var(--red)',
+        blocked: 'var(--txt-dim)'
+      };
+      const c = colors[color] || 'var(--txt-dim)';
+      const bars = Array.from({ length: TOTAL }, (_, i) => {
+        const filled = i < nivel;
+        return `<span style="
+          display:inline-block;width:5px;height:11px;border-radius:1px;margin-right:2px;
+          background:${filled ? c : 'var(--border)'};
+          opacity:${filled ? 1 : 0.4};
+          box-shadow:${filled && color === 'high' ? `0 0 4px ${c}` : 'none'};
+        "></span>`;
+      }).join('');
+      return `<div style="display:flex;align-items:center;gap:3px">
+        ${bars}
+        <span style="font-family:var(--mono);font-size:8.5px;color:${c};margin-left:3px">
+          ${nivel === 0 ? '—' : nivel === 4 ? '×3+' : nivel === 3 ? '×1–3' : nivel === 2 ? '<×1' : 'neg'}
+        </span>
+      </div>`;
+    }
+
+    // Helper: badge de tipo costo
+    function costBadge(tipo) {
+      const map = {
+        gestion: { lbl:'GESTIÓN',   cls:'badge-qw' },
+        opex:    { lbl:'OPEX',      cls:'badge-st' },
+        capex:   { lbl:'CAPEX',     cls:'badge-bl' }
+      };
+      const b = map[tipo] || { lbl: tipo.toUpperCase(), cls: 'badge-st' };
+      return `<span class="badge ${b.cls}">${b.lbl}</span>`;
+    }
+
+    // Helper: payback formateado
+    function fmtPayback(pb) {
+      if (pb === null)   return `<span style="color:var(--txt-dim)">—</span>`;
+      if (pb < 0)        return `<span style="color:var(--red)">neg</span>`;
+      if (pb < 1)        return `<span style="color:var(--teal)">&lt;1m</span>`;
+      if (pb > 999)      return `<span style="color:var(--red)">∞</span>`;
+      return `<span style="color:${pb <= 6 ? 'var(--teal)' : pb <= 18 ? 'var(--amber)' : 'var(--red)'}">${pb.toFixed(1)}m</span>`;
+    }
+
+    const _isPriv     = vm.flags.isPrivate;
+    const _lblDelta   = vm.labels.lblDelta;
+    const _lblRes     = vm.labels.lblRes;
+    const _lblPayback = vm.labels.lblPayback;
+
+    // Compute margen incremental for private mode
+    const _a = ACTIVE_ASSUMPTIONS;
+    const _ingPromedio = (_a.mix_isapre * _a.precio_isapre) + (_a.mix_fonasa_le * _a.precio_fonasa_le) + (_a.mix_particular * _a.precio_particular);
+    const _baseCx = simulate(inputs).cirugias_mes;
+
+    el.innerHTML = `
+      <table class="b-table">
+        <thead><tr>
+          <th>PALANCA</th>
+          <th style="text-align:right">${_lblDelta}</th>
+          <th style="text-align:right">${_lblRes}</th>
+          ${_isPriv ? '<th style="text-align:right">MARGEN INCR.</th>' : ''}
+          <th>TIPO / COSTO</th>
+          <th>ROI MENS.</th>
+          <th>${_lblPayback}</th>
+        </tr></thead>
+        <tbody>
+          ${impacts.map(i => {
+            const rowClass = i.blocked && !i.prioridad_critica ? 'row-blocked' : '';
+            const prioBadge = i.prioridad_critica
+              ? `<div style="margin-top:4px">
+                   <span class="badge" style="
+                     background:rgba(245,158,11,.15);
+                     color:var(--amber);
+                     border-color:rgba(245,158,11,.5);
+                     font-size:7px;letter-spacing:.4px;
+                     display:inline-flex;align-items:center;gap:3px">
+                     ⚠ PRIORIDAD CRÍTICA DE DESBLOQUEO
+                   </span>
+                 </div>`
+              : '';
+
+            // Costo impl formateado en M o K CLP
+            const implFmt = i.costo_impl >= 1_000_000
+              ? (i.costo_impl / 1_000_000).toFixed(1) + 'M'
+              : (i.costo_impl / 1_000).toFixed(0) + 'K';
+            const mesFmt  = i.costo_mes >= 1_000_000
+              ? (i.costo_mes / 1_000_000).toFixed(1) + 'M/m'
+              : (i.costo_mes / 1_000).toFixed(0) + 'K/m';
+
+            // Badge BLOQUEADO visible cuando corresponde
+            const blockedBadge = (i.blocked && !i.prioridad_critica)
+              ? `<div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+                   <span style="
+                     font-family:var(--mono);font-size:8px;font-weight:800;
+                     background:rgba(239,68,68,.12);color:var(--red);
+                     border:1px solid rgba(239,68,68,.35);
+                     border-radius:2px;padding:2px 7px;
+                     text-transform:uppercase;letter-spacing:.6px;
+                     display:inline-flex;align-items:center;gap:4px">
+                     ✕ BLOQUEADO
+                   </span>
+                   <span style="font-family:var(--mono);font-size:8px;color:var(--txt-dim)">
+                     Sin impacto mientras el cuello sea ${cuelloActual}
+                   </span>
+                 </div>`
+              : '';
+
+            // Margen incremental (modo privado): delta_volumen * margen_cx
+            const margenCx = _ingPromedio - (_a.costo_hora_pabellon * _a.duracion_promedio_horas);
+            const margenIncrClp = i.delta_volumen * margenCx;
+            const margenIncrFmt = margenIncrClp >= 0
+              ? `<span style="color:var(--teal)">+${(margenIncrClp/1e6).toFixed(2)}M</span>`
+              : `<span style="color:var(--red)">${(margenIncrClp/1e6).toFixed(2)}M</span>`;
+
+            return `
+            <tr class="${rowClass}" style="${i.blocked && !i.prioridad_critica ? 'opacity:0.45' : ''}">
+              <td style="font-weight:700;min-width:140px">
+                ${i.label}
+                ${prioBadge}
+                ${blockedBadge}
+              </td>
+              <td class="${i.delta_lista <= 0 ? 'col-pos' : 'col-neg'}" style="text-align:right">
+                ${i.delta_lista > 0 ? '+' : ''}${Math.round(i.delta_lista)}
+              </td>
+              <td class="${i.delta_ebitda >= 0 ? 'col-pos' : 'col-neg'}" style="text-align:right">
+                ${i.delta_ebitda >= 0 ? '+' : ''}${i.delta_ebitda.toFixed(2)}M
+              </td>
+              ${_isPriv ? `<td style="text-align:right;min-width:80px">${margenIncrFmt}</td>` : ''}
+              <td style="min-width:110px">
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  ${costBadge(i.tipo_costo)}
+                  <span style="font-family:var(--mono);font-size:7.5px;color:var(--txt-dim)">
+                    ${implFmt} impl · ${mesFmt}
+                  </span>
+                </div>
+              </td>
+              <td style="min-width:90px">${roiBars(i.eficiencia_nivel, i.eficiencia_color)}</td>
+              <td style="min-width:50px">${fmtPayback(i.payback_meses)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function renderScenarioComparator(vm) {
+    const el = document.getElementById('scenario-comparator');
+    if (!el) return;
+    const comps = compareScenarios(['optimizado', 'expansion']);
+    const _lblRes   = vm.labels.scenarioResLabel;
+    const _lblDelta = vm.labels.scenarioDeltaLabel;
+
+    // Update the scenario comparator description
+    const descEl = el.previousElementSibling;
+    if (descEl && descEl.style && descEl.tagName === 'DIV') {
+      descEl.textContent = vm.labels.scenarioDesc;
+    }
+
+    el.innerHTML = `
+      <table class="b-table">
+        <thead><tr>
+          <th>ESCENARIO</th><th>CX/MES</th><th>${_lblRes}</th><th>${_lblDelta}</th><th>CUELLO</th>
+        </tr></thead>
+        <tbody>${comps.map(c => `
+          <tr class="${c.is_base ? 'row-base' : c.is_actual ? 'row-actual' : ''}">
+            <td style="font-weight:800">${c.key.toUpperCase()}</td>
+            <td>${c.cirugias_mes}</td>
+            <td class="${c.resultado_operacional_mclp >= 0 ? 'col-pos' : 'col-neg'}">${c.resultado_operacional_mclp.toFixed(1)}M</td>
+            <td>${c.is_base
+              ? '<span class="d-chip d-neu">REF</span>'
+              : `<span class="d-chip ${c.delta_ebitda >= 0 ? 'd-pos' : 'd-neg'}">${c.delta_ebitda >= 0 ? '+' : ''}${c.delta_ebitda.toFixed(1)}M</span>`}
+            </td>
+            <td style="color:var(--amber);font-weight:800">${c.cuello}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // ==========================================
+  // BLOQUE 6: MONTE CARLO ENGINE
+  // ==========================================
+
+  const MC_ITERATIONS = 1000;
+
+  /** Box-Muller: genera un valor con distribución normal N(0,1) */
+  function randNormal() {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  /**
+   * Distribución triangular inversa (método CDF inversa)
+   * Parámetros: min (a), moda (c), max (b) — todos como factores multiplicadores
+   */
+  function randTriangular(a, c, b) {
+    const u = Math.random();
+    const fc = (c - a) / (b - a);
+    if (u < fc) return a + Math.sqrt(u * (b - a) * (c - a));
+    return b - Math.sqrt((1 - u) * (b - a) * (b - c));
+  }
+
+  /**
+   * Percentil de un array ya ordenado (interpolación lineal)
+   */
+  function percentile(sorted, p) {
+    const idx = (p / 100) * (sorted.length - 1);
+    const lo  = Math.floor(idx);
+    const hi  = Math.ceil(idx);
+    if (lo === hi) return sorted[lo];
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+  }
+
+  /**
+   * runMonteCarlo — 1.000 iteraciones sobre simulate()
+   * Ruido aplicado:
+   *   demanda_mes  → Normal, σ = 15% del valor actual
+   *   suspension   → Triangular (0.8×, 1.0×, 1.5× del valor actual)
+   *   ocupacion    → Normal leve, σ = 4% (deriva operativa)
+   *   duracion_media → Normal, σ = 8%
+   */
+  function runMonteCarlo(inputs, a = ACTIVE_ASSUMPTIONS, n = MC_ITERATIONS) {
+    const ebitdas   = [];
+    const cirugias  = [];
+    const deltas    = [];
+
+    for (let i = 0; i < n; i++) {
+      const noisy = {
+        ...inputs,
+        demanda_mes:        Math.max(1,   inputs.demanda_mes        * (1 + 0.15 * randNormal())),
+        suspension:         Math.min(45,  Math.max(0,
+                              inputs.suspension * randTriangular(0.8, 1.0, 1.5)
+                            )),
+        ocupacion:          Math.min(98,  Math.max(40,
+                              inputs.ocupacion  * (1 + 0.04 * randNormal())
+                            )),
+        duracion_media:     Math.max(20,  inputs.duracion_media     * (1 + 0.08 * randNormal())),
+        recambio:           Math.max(0,   inputs.recambio           * (1 + 0.08 * randNormal())),
+        estancia_media_dias:Math.max(0.5, inputs.estancia_media_dias * (1 + 0.05 * randNormal()))
+      };
+      const r = simulate(noisy, a);
+      ebitdas.push(calculateEconomics(r, noisy, a).resultado_mes);
+      cirugias.push(r.cirugias_mes);
+      deltas.push(r.delta_lista);
+    }
+
+    ebitdas.sort((a, b) => a - b);
+    cirugias.sort((a, b) => a - b);
+    deltas.sort((a, b) => a - b);
+
+    const p10  = percentile(ebitdas, 10);
+    const p50  = percentile(ebitdas, 50);
+    const p90  = percentile(ebitdas, 90);
+    const pct_deficit = ebitdas.filter(v => v < 0).length / n * 100;
+    const confianza   = Math.max(0, 100 - pct_deficit);
+
+    // Distribución de histograma (20 bins) para sparkline
+    const min_e = ebitdas[0], max_e = ebitdas[ebitdas.length - 1];
+    const BINS  = 20;
+    const bw    = (max_e - min_e) / BINS || 1;
+    const bins  = Array(BINS).fill(0);
+    ebitdas.forEach(v => {
+      const b = Math.min(BINS - 1, Math.floor((v - min_e) / bw));
+      bins[b]++;
+    });
+
+    return {
+      p10, p50, p90,
+      pct_deficit,
+      confianza,
+      bins,
+      min_e, max_e,
+      cx_p10: percentile(cirugias, 10),
+      cx_p50: percentile(cirugias, 50),
+      cx_p90: percentile(cirugias, 90),
+      n
+    };
+  }
+
+  // ── BLOQUE 6: CACHE MONTE CARLO ──────────────────────────────────────────
+  let _mcCache    = null;
+  let _mcCacheKey = null;
+
+  function getMonteCarloCacheKey(inputs, a = ACTIVE_ASSUMPTIONS, n = MC_ITERATIONS) {
+    return JSON.stringify({
+      pabellones_activos:  inputs.pabellones_activos,
+      suspension:          inputs.suspension,
+      duracion_media:      inputs.duracion_media,
+      recambio:            inputs.recambio,
+      ocupacion:           inputs.ocupacion,
+      demanda_mes:         inputs.demanda_mes,
+      camas_disponibles:   inputs.camas_disponibles,
+      estancia_media_dias: inputs.estancia_media_dias,
+      modo_ext:            inputs._modo_extension === true,
+      iter:                n
+    });
+  }
+
+  function invalidateMonteCarloCache() {
+    _mcCache    = null;
+    _mcCacheKey = null;
+  }
+
+  function runMonteCarloCached(inputs = currentInputs, a = ACTIVE_ASSUMPTIONS, n = MC_ITERATIONS) {
+    const key = getMonteCarloCacheKey(inputs, a, n);
+    if (_mcCache && _mcCacheKey === key) return _mcCache;
+    _mcCache    = runMonteCarlo(inputs, a, n);
+    _mcCacheKey = key;
+    return _mcCache || runMonteCarlo(inputs, a, n);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /** Renderiza el panel de riesgo Monte Carlo en #risk-panel */
+  function renderRiskPanel(inputs, vm) {
+    const el = document.getElementById('risk-panel');
+    if (!el) return;
+
+    const mc  = runMonteCarloCached(inputs);
+    const base = simulate(inputs);
+
+    // ── Clasificación de riesgo ──────────────────────────
+    const isPanic  = mc.pct_deficit > 20;
+    const isAtRisk = mc.pct_deficit > 5 && !isPanic;
+    // siempre hay margen que capturar — nunca decimos "no hacer nada"
+
+    const statusColor = isPanic  ? 'var(--red)'
+                      : isAtRisk ? 'var(--amber)'
+                      : 'var(--teal)';
+
+    // ── Margen sin capturar: diferencia entre escenario optimizado y actual ──
+    const _optInp = { ...inputs, suspension: Math.max(0, inputs.suspension - 5), ocupacion: Math.min(98, inputs.ocupacion + 5) };
+    const opt     = simulate(_optInp);
+    const gapCx   = opt.cirugias_mes - base.cirugias_mes;
+    const gapM    = calculateEconomics(opt, _optInp).resultado_mes - calculateEconomics(base, inputs).resultado_mes;
+    const gapMFmt = (gapM >= 0 ? '+' : '') + gapM.toFixed(1) + 'M CLP/mes';
+
+    // ── Retorno disponible y palanca principal ───────────
+    const sens    = runSensitivityAnalysis(inputs);
+    const bestLev = sens.filter(s => s.finUp > 0).sort((a, b) => b.finUp - a.finUp)[0];
+    const palancaLabel = bestLev
+      ? ({ suspension:'Bajar suspensiones', ocupacion:'Subir ocupación', duracion_media:'Reducir duración',
+           camas_disponibles:'Ampliar camas', demanda_mes:'Gestionar demanda' }[bestLev.key] || bestLev.label)
+      : '—';
+    const palancaImpact = bestLev ? '+' + bestLev.finUp.toFixed(1) + 'M si +10%' : '';
+
+    // ── Payback estimado: gapM / costo_impl de la mejor palanca ──
+    const IMPL_COSTS = { suspension:500_000, ocupacion:1_200_000, duracion_media:2_000_000,
+                         camas_disponibles:18_000_000, demanda_mes:500_000 };
+    const implCost = bestLev ? (IMPL_COSTS[bestLev.key] || 1_000_000) : 1_000_000;
+    const paybackM = bestLev && gapM > 0
+      ? Math.round(implCost / (gapM * 1_000_000))
+      : null;
+    const paybackFmt = paybackM !== null
+      ? (paybackM <= 1 ? '< 1 mes' : paybackM + ' meses')
+      : '—';
+
+    // Narrativa ejecutiva dependiendo del estado y modo institucional
+    const _isPriv  = vm && vm.flags && vm.flags.isPrivate;
+    const pctOk = 100 - mc.pct_deficit;
+    let headline, subline, barLabel, mcContext;
+    if (isPanic) {
+      if (_isPriv) {
+        headline  = '🚨 ' + mc.pct_deficit.toFixed(0) + '% de escenarios proyectan margen negativo';
+        subline   = 'En 1 de cada ' + Math.round(100/mc.pct_deficit) + ' meses la clínica opera con pérdida. El modelo de pricing o estructura de costos requiere revisión urgente.';
+        barLabel  = '← Escenarios con pérdida · Escenarios rentables →';
+        mcContext = 'Acción urgente: ' + palancaLabel + ' mejora el margen y captura ' + palancaImpact + '. Retorno estimado: ' + paybackFmt + '.';
+      } else {
+        headline  = '🚨 ' + mc.pct_deficit.toFixed(0) + '% de los escenarios proyectan déficit';
+        subline   = 'En 1 de cada ' + Math.round(100/mc.pct_deficit) + ' meses el hospital no cubre sus costos con los ingresos actuales. El riesgo es real, no teórico.';
+        barLabel  = '← Escenarios en déficit · Escenarios positivos →';
+        mcContext = 'Acción urgente: ' + palancaLabel + ' reduce el riesgo y genera ' + palancaImpact + '. Payback estimado: ' + paybackFmt + '.';
+      }
+    } else if (isAtRisk) {
+      if (_isPriv) {
+        headline  = '⚠ Margen estrecho — ' + mc.pct_deficit.toFixed(1) + '% de riesgo de pérdida';
+        subline   = 'La clínica opera cerca del punto de equilibrio. Una caída en ocupación o en el mix pagador puede cruzar a margen negativo.';
+        barLabel  = '← Escenarios con pérdida · Escenarios rentables →';
+        mcContext = 'Recomendación: ' + palancaLabel + '. Captura ' + palancaImpact + ' y aleja la operación del punto de pérdida.';
+      } else {
+        headline  = '⚠ Margen estrecho — ' + mc.pct_deficit.toFixed(1) + '% de riesgo de déficit';
+        subline   = 'El sistema está operando cerca del límite. Una baja en ocupación o un alza en suspensiones puede cruzar a déficit.';
+        barLabel  = '← Escenarios en déficit · Escenarios positivos →';
+        mcContext = 'Recomendación: ' + palancaLabel + '. Captura ' + palancaImpact + ' y aleja el sistema del límite de déficit.';
+      }
+    } else {
+      const gapCxStr = gapCx > 0 ? gapCx + ' cirugías/mes adicionales' : 'optimización de eficiencia';
+      if (_isPriv) {
+        headline  = '✓ Clínica rentable — revenue capturable disponible';
+        subline   = 'En 1,000 escenarios simulados la operación mantiene margen positivo con consistencia. El riesgo financiero es bajo.';
+        barLabel  = 'Escenarios rentables';
+        mcContext = gapM > 0.05
+          ? 'Revenue sin capturar: ' + gapCxStr + ' y ' + gapMFmt + ' disponibles mejorando ' + palancaLabel + '. Retorno: ' + paybackFmt + '.'
+          : 'La clínica opera de forma eficiente. Monitorear mix pagador y ocupación de pabellones.';
+      } else {
+        headline  = '✓ Sistema financieramente estable';
+        subline   = 'En 1,000 escenarios simulados con ruido real, solo el ' + mc.pct_deficit.toFixed(1) + '% cae en déficit. La operación es robusta.';
+        barLabel  = 'Escenarios positivos';
+        mcContext = gapM > 0.05
+          ? 'Hay margen sin capturar: ' + gapCxStr + ' y ' + gapMFmt + ' disponibles aplicando ' + palancaLabel + '. Payback: ' + paybackFmt + '.'
+          : 'El sistema está bien configurado para el escenario base. Si la demanda crece, revisar capacidad de camas y pabellones.';
+      }
+    }
+
+    el.innerHTML = `
+      <!-- HEADLINE EJECUTIVO -->
+      <div style="background:var(--card);border:1px solid ${statusColor}33;
+                  border-left:3px solid ${statusColor};border-radius:2px;
+                  padding:9px 11px;margin-bottom:8px">
+        <div style="font-family:var(--mono);font-size:11px;font-weight:800;
+                    color:${statusColor};line-height:1.3;margin-bottom:5px">
+          ${headline}
+        </div>
+        <div style="font-family:var(--sans);font-size:10px;color:var(--txt-dim);line-height:1.55">
+          ${subline}
+        </div>
+      </div>
+
+      <!-- BARRA DE CONFIANZA: accionable, con contexto -->
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    font-family:var(--mono);font-size:7px;color:var(--txt-dim);margin-bottom:4px">
+          <span>1,000 escenarios con variabilidad operacional real</span>
+          <span style="color:${statusColor};font-weight:700">${pctOk.toFixed(0)}% positivos</span>
+        </div>
+        <div style="height:10px;background:rgba(239,68,68,.2);border-radius:4px;overflow:hidden;display:flex;position:relative">
+          <div style="height:100%;width:${pctOk}%;background:${statusColor};opacity:.75;transition:width .5s ease;border-radius:4px 0 0 4px"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;
+                    font-family:var(--mono);font-size:6.5px;margin-top:3px;color:var(--txt-dim)">
+          <span>Esperado: <strong style="color:${mc.p50 >= 0 ? 'var(--teal)' : 'var(--red)'}">${mc.p50 >= 0 ? '+' : ''}${mc.p50.toFixed(1)}M</strong></span>
+          <span>Peor caso P10: <strong style="color:var(--red)">${mc.p10 >= 0 ? '+' : ''}${mc.p10.toFixed(1)}M</strong></span>
+          <span>Mejor caso P90: <strong style="color:var(--teal)">${mc.p90 >= 0 ? '+' : ''}${mc.p90.toFixed(1)}M</strong></span>
+        </div>
+      </div>
+
+      <!-- INTERPRETACIÓN ACCIONABLE -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:2px;
+                  padding:7px 10px;margin-bottom:7px">
+        <div style="font-family:var(--mono);font-size:7px;color:var(--txt-dim);
+                    text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">
+          ¿Qué hago con esto?
+        </div>
+        <div style="font-family:var(--sans);font-size:9.5px;color:var(--txt);line-height:1.5">
+          ${mcContext}
+        </div>
+      </div>
+
+      <!-- RETORNO DISPONIBLE -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:2px;padding:7px 9px">
+          <div style="font-family:var(--mono);font-size:7px;color:var(--txt-dim);
+                      text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">
+            ${_isPriv ? 'Revenue capturable' : 'Margen capturable'}
+          </div>
+          <div style="font-family:var(--mono);font-size:13px;font-weight:800;
+                      color:${gapM > 0.01 ? 'var(--teal)' : 'var(--txt-dim)'};line-height:1">
+            ${gapM > 0.01 ? gapMFmt : 'Sistema optimizado'}
+          </div>
+          <div style="font-family:var(--mono);font-size:7px;color:var(--txt-dim);margin-top:3px">
+            ${gapM > 0.01 ? 'bajando suspensión y subiendo ocupación 5 pp' : 'No hay margen adicional evidente con ajustes menores'}
+          </div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:2px;padding:7px 9px">
+          <div style="font-family:var(--mono);font-size:7px;color:var(--txt-dim);
+                      text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">
+            Acción prioritaria
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;font-weight:800;
+                      color:var(--amber);line-height:1.3">
+            ${palancaLabel || 'Sistema OK'}
+          </div>
+          <div style="font-family:var(--mono);font-size:7px;color:var(--txt-dim);margin-top:3px">
+            ${palancaImpact ? palancaImpact + ' · ' + (_isPriv ? 'retorno ' : 'payback ') + paybackFmt : (_isPriv ? 'Monitorear mix pagador y ocupación' : 'Monitorear ocupación y suspensiones')}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── Debounce para Monte Carlo (300ms) ──────────────
+  let _mcTimer = null;
+  function renderRiskPanelDebounced(inputs, vm) {
+    clearTimeout(_mcTimer);
+    _mcTimer = setTimeout(() => renderRiskPanel(inputs, vm), 300);
+  }
+
+  // ==========================================
+  // CAPA ECONÓMICA — separada del motor operativo
+  // ==========================================
+
+  /**
+   * calculatePublicEconomics — modelo económico hospital público chileno.
+   * Recibe el output de simulate() y los inputs actuales.
+   * Devuelve un contrato normalizado que consumen los renders.
+   * NO llama a simulate() — trabaja sobre el resultado ya calculado.
+   */
+  function calculatePublicEconomics(r, inputs, a = ACTIVE_ASSUMPTIONS) {
+    const arancel       = inputs.arancel_fonasa ?? a.arancel_fonasa_default;
+    const comprometidas = a.produccion_comprometida_mes;
+    const cx            = r.cirugias_mes;
+
+    // ── Ingresos con techo de producción ───────────────────────────────
+    const produccion_pagada   = Math.min(cx, comprometidas);
+    const sobreproduccion     = Math.max(0, cx - comprometidas);
+    const subejercicio        = Math.max(0, comprometidas - cx);
+
+    const ingreso_comprometido  = produccion_pagada * arancel;
+    const ingreso_sobreprod     = sobreproduccion * arancel * a.factor_pago_sobreproduccion;
+    const penalidad_subej       = subejercicio * arancel * a.factor_penalidad_subejercicio;
+    const ingreso_fonasa_real   = ingreso_comprometido + ingreso_sobreprod - penalidad_subej;
+
+    const costo_total   = r.costo_fijo + r.costo_variable;
+    const resultado_mes = parseFloat(((r.presupuesto_base + ingreso_fonasa_real - costo_total) / 1e6).toFixed(2));
+    const costo_no_actuar = Math.round(r.delta_lista) > 0
+      ? Math.round(r.delta_lista) * arancel / 1e6
+      : 0;
+
+    // ── KPIs normalizados ──────────────────────────────────────────────
+    const demanda      = inputs.demanda_mes || 1;
+    const cobertura    = cx / demanda;
+    const prodState    = cobertura >= 1 ? 'good' : cobertura >= 0.9 ? 'warn' : 'bad';
+    const listaState   = r.delta_lista < 0 ? 'good' : r.delta_lista === 0 ? 'warn' : 'bad';
+    const ropState     = resultado_mes >= 5 ? 'good' : resultado_mes >= 0 ? 'warn' : 'bad';
+    const prodClr      = prodState  === 'good' ? 'var(--teal)'  : prodState  === 'warn' ? 'var(--amber)' : 'var(--red)';
+    const listaClr     = listaState === 'good' ? 'var(--teal)'  : listaState === 'warn' ? 'var(--amber)' : 'var(--red)';
+    const ropClr       = ropState   === 'good' ? 'var(--teal)'  : ropState   === 'warn' ? 'var(--amber)' : 'var(--red)';
+
+    const kpis = [
+      { key:'produccion',  label:'PRODUCCIÓN',    val: cx,   unit:'cx/mes',   valColor: prodClr,        state: prodState  },
+      { key:'delta_lista', label:'Δ LISTA',       val: (r.delta_lista > 0 ? '+' : '') + Math.round(r.delta_lista), unit:'casos/mes', valColor: listaClr, state: listaState },
+      { key:'resultado',   label:'RESULTADO OP.', val: resultado_mes.toFixed(1), unit:'M CLP', valColor: ropClr, state: ropState },
+      { key:'cuello',      label:'CUELLO',        val: r.cuello, unit:'', valColor:'var(--amber)', state:'warn' },
+    ];
+
+    // ── Alertas normalizadas ───────────────────────────────────────────
+    const alerts = [];
+    if (sobreproduccion > 0) {
+      alerts.push({
+        type: 'warn',
+        msg:  `Sobreproducción: ${Math.round(sobreproduccion)} cx sobre compromiso. Ingreso adicional al ${Math.round(a.factor_pago_sobreproduccion * 100)}% del arancel — diferencia no financiada: ${((sobreproduccion * arancel * (1 - a.factor_pago_sobreproduccion)) / 1e6).toFixed(1)}M CLP/mes`
+      });
+    }
+    if (subejercicio > 0) {
+      alerts.push({
+        type: a.factor_penalidad_subejercicio > 0 ? 'alert' : 'warn',
+        msg:  `Subejecución: ${Math.round(subejercicio)} cx bajo compromiso MINSAL. ${a.factor_penalidad_subejercicio > 0 ? `Penalidad estimada: ${(penalidad_subej / 1e6).toFixed(1)}M CLP/mes.` : 'Sin penalidad directa, pero afecta negociación presupuestaria.'}`
+      });
+    }
+    if (resultado_mes < 0) {
+      alerts.push({
+        type: 'alert',
+        msg:  `Resultado operacional negativo: ${resultado_mes.toFixed(1)}M CLP/mes. Presupuesto en déficit.`
+      });
+    }
+
+    // ── Waterfall ──────────────────────────────────────────────────────
+    const toM = v => v / 1e6;
+    const waterfall = [
+      { label:'DIPRES',   val:  toM(r.presupuesto_base),    color:'var(--blue)' },
+      { label:'FONASA',   val:  toM(ingreso_fonasa_real),   color:'var(--teal)' },
+      { label:'FIJO',     val: -toM(r.costo_fijo),          color:'var(--red)'  },
+      { label:'VAR',      val: -toM(r.costo_variable),      color:'var(--red)'  },
+      { label:'TOTAL',    val:  resultado_mes,               color: resultado_mes >= 0 ? 'var(--amber)' : 'var(--red)' },
+    ];
+
+    // ── Recomendación ejecutiva ────────────────────────────────────────
+    const recommendation = {
+      costo_no_actuar,
+      // Se construye en getDecisionRecommendation(); aquí solo adjuntamos el campo extra
+    };
+
+    return {
+      resultado_mes,
+      ingreso_fonasa_real,
+      sobreproduccion,
+      subejercicio,
+      kpis,
+      alerts,
+      waterfall,
+      recommendation,
+      // Pass-through para renders que aún leen del sim result directamente
+      _simResult: r,
+    };
+  }
+
+  /**
+   * calculatePrivateEconomics — modelo económico clínica privada.
+   * Mix pagador ponderado + revenue por hora de pabellón.
+   */
+  function calculatePrivateEconomics(r, inputs, a = ACTIVE_ASSUMPTIONS) {
+    const cx = r.cirugias_mes;
+
+    // Ingreso promedio ponderado por mix pagador
+    const ingreso_promedio = (a.mix_isapre    * a.precio_isapre)    +
+                             (a.mix_fonasa_le * a.precio_fonasa_le) +
+                             (a.mix_particular * a.precio_particular);
+    const ingreso_total  = cx * ingreso_promedio;
+
+    // Costos
+    const costo_variable = cx * (a.costo_hora_pabellon * a.duracion_promedio_horas);
+    const costo_fijo     = a.costo_rrhh_fijo_mes;
+    const costo_total    = costo_fijo + costo_variable;
+
+    const resultado = (ingreso_total - costo_total) / 1e6;
+
+    // KPIs clínicos privados
+    const horas_totales      = Math.max(r.h_efectivas, 1);
+    const revenue_per_hour   = ingreso_total / horas_totales;
+    const margen_cx          = ingreso_promedio - (a.costo_hora_pabellon * a.duracion_promedio_horas);
+    const demanda            = inputs.demanda_mes || 0;
+    const perdida_backlog    = Math.max(0, demanda - cx) * ingreso_promedio;
+
+    const resState  = resultado > 0 ? 'good' : 'bad';
+    const resColor  = resultado > 0 ? 'var(--teal)' : 'var(--red)';
+    const margColor = margen_cx > 0 ? 'var(--teal)' : 'var(--red)';
+    const margState = margen_cx > 0 ? 'good' : 'bad';
+
+    const kpis = [
+      { key:'cx',     label:'Producción',  val: cx,                                unit:'cx/mes', valColor:'var(--teal)',  state:'good'    },
+      { key:'revh',   label:'Rev/Hora',    val: Math.round(revenue_per_hour/1000) + 'K', unit:'$/h', valColor:'var(--teal)',  state:'good'    },
+      { key:'margen', label:'Margen/Cx',   val: Math.round(margen_cx / 1000) + 'K', unit:'$/cx',  valColor: margColor,     state: margState },
+      { key:'res',    label:'Resultado',   val: parseFloat(resultado.toFixed(1)),  unit:'M CLP',  valColor: resColor,      state: resState  },
+    ];
+
+    const alerts = [
+      ...(margen_cx < 0
+        ? [{ type:'alert', msg:'Cirugías con margen negativo — costo de pabellón supera ingreso promedio ponderado.' }]
+        : []),
+      ...(perdida_backlog > 0
+        ? [{ type:'warn', msg:`Backlog quirúrgico: ${Math.round(demanda - cx)} cx sin atender → ${(perdida_backlog / 1e6).toFixed(1)}M CLP/mes en revenue no capturado.` }]
+        : []),
+    ];
+
+    const waterfall = [
+      { label:'Ingresos', val:  ingreso_total  / 1e6, color:'var(--teal)' },
+      { label:'C.Fijo',   val: -costo_fijo     / 1e6, color:'var(--red)'  },
+      { label:'C.Var',    val: -costo_variable / 1e6, color:'var(--red)'  },
+      { label:'TOTAL',    val:  resultado,             color: resultado >= 0 ? 'var(--amber)' : 'var(--red)' },
+    ];
+
+    return {
+      resultado_mes:       parseFloat(resultado.toFixed(2)),
+      ingreso_fonasa_real: ingreso_total,   // campo canónico — aquí es ingreso total
+      sobreproduccion:     0,
+      subejercicio:        0,
+      kpis,
+      alerts,
+      waterfall,
+      recommendation: {
+        title:           'Optimización de rentabilidad',
+        message:         'Priorizar utilización de pabellones y mix de pacientes.',
+        costo_no_actuar: Math.round(perdida_backlog),
+      },
+      _simResult: r,
+    };
+  }
+
+  /**
+   * calculateEconomics — router por modo institucional.
+   * Único punto de entrada para la capa económica.
+   */
+  function calculateEconomics(r, inputs, a = ACTIVE_ASSUMPTIONS) {
+    return APP_MODE === 'privado'
+      ? calculatePrivateEconomics(r, inputs, a)
+      : calculatePublicEconomics(r, inputs, a);
+  }
+
+  // ── Mapa de labels modo privado ──────────────────────────────────────
+  function getPrivateLabelMap() {
+    return {
+      lista:        'Revenue no capturado',
+      delta:        'Δ Revenue',
+      resultado:    'Margen mensual',
+      produccion:   'Producción quirúrgica',
+      capacidad:    'Capacidad utilizada',
+    };
+  }
+
+  // ==========================================
+  // FASE 1 — ARQUITECTURA: buildViewModel + applyContext
+  // ==========================================
+
+  /**
+   * ViewModel contract:
+   * - métricas derivadas (capacidad, margen, etc.)
+   * - labels (textos UI)
+   * - flags (ej: isPrivate)
+   * - overrides (kpisOverride, alertsOverride, decisionOverride)
+   *
+   * Los renderers SOLO consumen vm.
+   * NO acceden a estado global ni a cálculos.
+   */
+  function buildViewModel(r, inputs, a) {
+    a = a || ACTIVE_ASSUMPTIONS;
+    const capacidad_utilizada = r.cap_pab > 0 ? r.cirugias_mes / r.cap_pab : 0;
+    const capacidad_ociosa    = Math.max(0, 1 - capacidad_utilizada);
+    const ingreso_promedio    = (a.mix_isapre * a.precio_isapre) + (a.mix_fonasa_le * a.precio_fonasa_le) + (a.mix_particular * a.precio_particular);
+    const margen_cx           = ingreso_promedio - (a.costo_hora_pabellon * a.duracion_promedio_horas);
+    const ingreso_total       = r.cirugias_mes * ingreso_promedio;
+    const horas_efectivas     = Math.max(r.h_efectivas, 1);
+    const revenue_per_hour    = ingreso_total / horas_efectivas;
+    const demanda             = inputs.demanda_mes || 0;
+    const perdida_backlog     = Math.max(0, demanda - r.cirugias_mes) * ingreso_promedio;
+    return {
+      cirugias_mes: r.cirugias_mes,
+      cap_pab: r.cap_pab,
+      cap_camas: r.cap_camas,
+      h_efectivas: r.h_efectivas,
+      delta_lista: r.delta_lista,
+      cuello: r.cuello_de_botella || r.cuello,
+      cuello_de_botella: r.cuello_de_botella || r.cuello,
+      lista_espera_stock: r.lista_espera_stock,
+      capacidad_utilizada,
+      capacidad_ociosa,
+      ingreso_promedio,
+      margen_cx,
+      revenue_per_hour,
+      perdida_backlog,
+    };
+  }
+
+  function applyContext(vm, eco, inputs) {
+    const _isPrivado = isPrivado();
+    const labels = _isPrivado
+      ? { lista:'Revenue no capturado', delta:'Δ Revenue', resultado:'Margen mensual', produccion:'Producción quirúrgica', capacidad:'Capacidad utilizada', lblBacklog:'Δ REVENUE', lblResult:'MARGEN MENSUAL', lblProd:'PRODUCCIÓN QX' }
+      : { lista:'Lista de espera', delta:'Δ Lista', resultado:'Resultado operacional', produccion:'Producción', capacidad:'Capacidad', lblBacklog:'Δ LISTA', lblResult:'RESULTADO OP.', lblProd:'PRODUCCIÓN' };
+
+    let kpisOverride = null;
+    if (_isPrivado) {
+      const revHState = vm.revenue_per_hour > 300000 ? 'good' : vm.revenue_per_hour > 150000 ? 'warn' : 'bad';
+      const revHColor = revHState === 'good' ? 'var(--teal)' : revHState === 'warn' ? 'var(--amber)' : 'var(--red)';
+      const margState = vm.margen_cx > 0 ? 'good' : 'bad';
+      const margColor = vm.margen_cx > 0 ? 'var(--teal)' : 'var(--red)';
+      const ocState   = vm.capacidad_ociosa > 0.2 ? 'bad' : vm.capacidad_ociosa > 0.1 ? 'warn' : 'good';
+      const ocColor   = ocState === 'bad' ? 'var(--red)' : ocState === 'warn' ? 'var(--amber)' : 'var(--teal)';
+      const blState   = vm.perdida_backlog > 0 ? 'bad' : 'good';
+      const blColor   = vm.perdida_backlog > 0 ? 'var(--red)' : 'var(--teal)';
+      kpisOverride = [
+        { label:'Revenue/Hora Pabellón', val: Math.round(vm.revenue_per_hour/1000)+'K', unit:'$/h', valColor: revHColor, state: revHState },
+        { label:'Margen por cirugía', val: Math.round(vm.margen_cx/1000)+'K', unit:'$/cx', valColor: margColor, state: margState },
+        { label:'Capacidad ociosa', val: Math.round(vm.capacidad_ociosa*100), unit:'%', valColor: ocColor, state: ocState },
+        { label:'Revenue perdido (backlog)', val: (vm.perdida_backlog/1e6).toFixed(1), unit:'M/mes', valColor: blColor, state: blState },
+      ];
+    }
+
+    let alertsOverride = null;
+    if (_isPrivado) {
+      const alerts = [];
+      if (vm.margen_cx < 0) alerts.push({ type:'alert', msg:'Cirugías destruyen valor — margen negativo: costo de pabellón supera ingreso promedio ponderado.' });
+      if (vm.capacidad_ociosa > 0.2) alerts.push({ type:'warn', msg:`Capacidad ociosa significativa (${Math.round(vm.capacidad_ociosa*100)}%) — pérdida directa de ingresos por horas de pabellón no utilizadas.` });
+      if (vm.perdida_backlog > 0) {
+        const dem = inputs.demanda_mes || 1;
+        alerts.push({ type:'warn', msg:`Demanda no capturada = revenue perdido: ${Math.round(dem - vm.cirugias_mes)} cx/mes → ${(vm.perdida_backlog/1e6).toFixed(1)}M CLP/mes sin facturar.` });
+      }
+      if (eco.resultado_mes < 0) alerts.push({ type:'alert', msg:`Margen mensual negativo: ${eco.resultado_mes.toFixed(1)}M CLP — modelo de operación insostenible.` });
+      if (alerts.length === 0) alerts.push({ type:'good', msg:'Operación rentable · Margen positivo y capacidad bien utilizada.' });
+      alertsOverride = alerts;
+    }
+
+    let decisionOverride = null;
+    if (_isPrivado) {
+      let level, message;
+      const title = 'Optimización de rentabilidad';
+      if (vm.capacidad_ociosa > 0.2) {
+        level = 'critical';
+        message = `Capacidad ociosa del ${Math.round(vm.capacidad_ociosa*100)}% — ${Math.round(vm.capacidad_ociosa*vm.cap_pab)} cx/mes no facturadas. Aumentar volumen o mejorar mix pagador para capturar el revenue disponible. Revenue perdido estimado: ${(vm.perdida_backlog/1e6).toFixed(1)}M CLP/mes.`;
+      } else if (vm.margen_cx < 0) {
+        level = 'critical';
+        message = `Margen por cirugía negativo (${Math.round(vm.margen_cx/1000)}K $/cx). Revisar pricing o estructura de costos de pabellón — el modelo actual destruye valor por cada cirugía realizada.`;
+      } else if (vm.perdida_backlog > 0) {
+        const dem = inputs.demanda_mes || 1;
+        level = 'neutral';
+        message = `Existe demanda no capturada: ${Math.round(dem - vm.cirugias_mes)} cx/mes sin atender → ${(vm.perdida_backlog/1e6).toFixed(1)}M CLP/mes en revenue perdido. Expandir capacidad quirúrgica para capturar estos ingresos.`;
+      } else {
+        level = 'positive';
+        message = `Operación rentable y eficiente. Margen por cirugía positivo (${Math.round(vm.margen_cx/1000)}K $/cx) y capacidad bien utilizada. Monitorear mix pagador y mantener presión sobre ocupación de pabellones.`;
+      }
+      decisionOverride = { level, title, message };
+    }
+
+    const flags = { isPrivate: _isPrivado };
+
+    // Projection-specific labels (depend on runtime proj data — computed in renderProjection,
+    // but mode-dependent strings are pre-built here so renderers stay mode-agnostic)
+    labels.projectionTitle    = _isPrivado ? 'Revenue no capturado · Proyección 24 Meses' : 'Lista de Espera · Proyección 24 Meses';
+    labels.projLegend         = _isPrivado ? 'Revenue no capturado' : 'Lista espera';
+    labels.execMsgConverge    = _isPrivado
+      ? (cierre) => `Se captura completamente la demanda — el backlog se cierra en ${cierre} meses con la configuracion actual. Sin perdida estructural de ingresos.`
+      : (cierre) => `La lista de espera se cierra en ${cierre} meses con la configuracion actual. El sistema produce mas que la demanda.`;
+    labels.execMsgDiverge     = _isPrivado
+      ? (delta24, stock24) => `Existe perdida estructural de ingresos: +${delta24} cx/mes sin atender. En 24 meses el backlog acumulara ${stock24} casos. Ampliar capacidad para capturar revenue no realizado.`
+      : (delta24, stock24) => `Deficit mensual: +${delta24} cx/mes. En 24 meses se acumularan ${stock24} casos adicionales. Se requiere aumentar produccion o reducir demanda no resuelta.`;
+    labels.projTitleConverge  = _isPrivado
+      ? (cierre) => `CAPTURA COMPLETA EN ${cierre} MESES`
+      : () => null;  // renderProjection uses msg (CIERRA EN X MESES) for public
+    labels.projTitleDiverge   = _isPrivado ? 'PÉRDIDA ESTRUCTURAL DE INGRESOS' : null;
+
+    // MarginalTable labels
+    labels.lblDelta   = _isPrivado ? 'Δ BACKLOG'     : 'Δ LISTA';
+    labels.lblRes     = _isPrivado ? 'Δ MARGEN'      : 'Δ RES.OP.';
+    labels.lblPayback = _isPrivado ? 'RETORNO INCR.' : 'PAYBACK';
+
+    // TopActions labels
+    labels.topActionsEbitdaLabel  = _isPrivado ? 'Δ Margen'            : 'Δ resultado';
+    labels.topActionsPaybackLabel = _isPrivado ? 'Retorno incremental' : 'Payback';
+
+    // ScenarioComparator labels
+    labels.scenarioResLabel   = _isPrivado ? 'MARGEN'     : 'RESULTADO OP.';
+    labels.scenarioDeltaLabel = _isPrivado ? 'Δ REVENUE'  : 'Δ VS BASE';
+    labels.scenarioDesc       = _isPrivado
+      ? 'Compara el escenario actual con alternativas de optimización y expansión. Muestra qué gana la clínica en revenue, margen y capacidad si se aplican cada conjunto de mejoras.'
+      : 'Compara el escenario actual con alternativas de optimización y expansión. Muestra qué gana el hospital en cirugías, resultado operacional y lista de espera si se aplican cada conjunto de mejoras.';
+
+    // ExecutiveSummary chip (private mode pre-computed)
+    let execSummaryChip = null;
+    if (_isPrivado) {
+      if (eco.resultado_mes < 0 || vm.margen_cx < 0) {
+        execSummaryChip = { cls: 'panic', text: '⚠ Margen negativo — modelo insostenible' };
+      } else if (vm.capacidad_ociosa > 0.2) {
+        execSummaryChip = { cls: '', text: `⚠ Capacidad subutilizada (${Math.round(vm.capacidad_ociosa * 100)}% ociosa) — revenue perdido` };
+      } else {
+        execSummaryChip = { cls: 'ok', text: '✔ Operación rentable y eficiente' };
+      }
+    }
+
+    return { ...vm, labels, flags, kpisOverride, alertsOverride, decisionOverride, execSummaryChip };
+  }
+
+  function render() {
+    const inputs = currentInputs;
+    const r      = simulate(inputs);
+    const eco    = calculateEconomics(r, inputs, ACTIVE_ASSUMPTIONS);
+    const baseVM = buildViewModel(r, inputs, ACTIVE_ASSUMPTIONS);
+    const vm     = applyContext(baseVM, eco, inputs);
+    renderDecisionRecommendation(vm, eco, inputs);
+    renderTopActions(inputs, vm);
+    renderMetrics(vm, eco);
+    renderGraph(r, eco);
+    renderAlerts(vm, eco, inputs);
+    renderRiskPanelDebounced(inputs, vm);
+    renderExecutiveSummaryDebounced(vm, inputs);
+    renderMarginalTable(vm, inputs);
+    renderScenarioComparator(vm);
+    renderWaterfall(r, eco, inputs);
+    renderProjection(r, vm, inputs);
+  }
+
+  // Wiring: updateVal expuesto globalmente para los onclick de los steppers
+  window.updateVal = (key, delta, min, max) => {
+    const raw = Math.round((currentInputs[key] + delta) * 10) / 10;
+    currentInputs[key] = Math.min(max, Math.max(min, raw));
+    invalidateMonteCarloCache();
+    const lbl = document.getElementById(`lbl-${key}`);
+    if (lbl) {
+      const s = STEPPERS.find(s => s.key === key);
+      lbl.textContent = `${currentInputs[key]}${s ? s.unit : ''}`;
+    }
+    render();
+  };
+
+  window.addEventListener('load', () => {
+    initGraph();
+    buildControlBar();
+    render();
+  });
+
+  // ── Selector de modo institucional ──────────────────────────────────
+  window.setMode = function(mode) {
+    APP_MODE = mode;
+    // Ocultar pantalla de selección
+    const sel = document.getElementById('mode-selector');
+    if (sel) sel.style.display = 'none';
+    // Actualizar chip en topbar
+    const chip = document.getElementById('mode-chip');
+    if (chip) {
+      chip.textContent = mode === 'publico' ? 'MODO: PÚBLICO' : 'MODO: PRIVADO';
+      chip.className   = mode === 'publico' ? 'chip-pub' : 'chip-prv';
+    }
+    // Ajustar assumptions según modo
+    if (mode === 'publico') {
+      ACTIVE_ASSUMPTIONS = { ...BASELINE_ASSUMPTIONS };
+    } else {
+      // Modo privado: mismos assumptions operativos, sin techo de producción
+      ACTIVE_ASSUMPTIONS = { ...BASELINE_ASSUMPTIONS, produccion_comprometida_mes: 99999, factor_pago_sobreproduccion: 1.0, factor_penalidad_subejercicio: 0 };
+    }
+    invalidateMonteCarloCache();
+    render();
+  };
+
+  window.showModeSelector = function() {
+    const sel = document.getElementById('mode-selector');
+    if (sel) sel.style.display = 'flex';
+  };
+
+  // ==========================================
+  // FASE 5: CSV RECALIBRATION MODULE
+  // ==========================================
+
+  /**
+   * Mapeo canónico: encabezado CSV → clave interna
+   * Acepta variantes con/sin tildes, mayúsculas y espacios.
+   */
+  const CSV_FIELD_MAP = {
+    // currentInputs (operativos)
+    pabellones_activos:   ['pabellones_activos', 'pabellones activos', 'pab_activos'],
+    suspension:           ['suspension', 'suspensión', 'tasa_suspension', 'tasa_suspensión'],
+    duracion_media:       ['duracion_media', 'duración_media', 'duracion media'],
+    recambio:             ['recambio', 'tiempo_recambio'],
+    ocupacion:            ['ocupacion', 'ocupación', 'tasa_ocupacion', 'tasa_ocupación'],
+    demanda_mes:          ['demanda_mes', 'demanda mes', 'demanda_quirurgica_mes'],
+    camas_disponibles:    ['camas_disponibles', 'camas disponibles', 'camas_postop'],
+    estancia_media_dias:  ['estancia_media_dias', 'estancia_media', 'dias_estancia', 'días_estancia'],
+    arancel_fonasa:       ['arancel_fonasa', 'arancel fonasa', 'arancel'],
+
+    // DEFAULT_ASSUMPTIONS (estructurales)
+    pabellones_dotados:       ['pabellones_dotados', 'pabellones dotados'],
+    dias_habiles_mes:         ['dias_habiles_mes', 'días_hábiles_mes', 'dias habiles'],
+    horas_turno:              ['horas_turno', 'horas turno'],
+    turnos_dia:               ['turnos_dia', 'turnos_día', 'turnos dia'],
+    costo_rrhh_fijo_mes:      ['costo_rrhh_fijo_mes', 'costo_rrhh', 'rrhh_fijo'],
+    costo_variable_cirugia:   ['costo_variable_cirugia', 'costo_variable', 'costo variable cirugia'],
+    presupuesto_dipres_mes:   ['presupuesto_dipres_mes', 'presupuesto_dipres', 'dipres'],
+    ingreso_por_cirugia:      ['ingreso_por_cirugia', 'ingreso cirugia'],
+    demanda_quirurgica_mes:   ['demanda_quirurgica_mes'],
+    lista_espera_inicial:     ['lista_espera_inicial', 'lista espera inicial', 'stock_inicial'],
+    camas_postop_default:     ['camas_postop_default'],
+    estancia_media_default:   ['estancia_media_default'],
+    arancel_fonasa_default:   ['arancel_fonasa_default']
+  };
+
+  /** Normaliza un string: minúsculas, sin tildes, sin espacios extra */
+  function normKey(s) {
+    return s.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .replace(/\s+/g, '_');
+  }
+
+  /** Construye lookup invertido normKey → campo canónico */
+  function buildLookup() {
+    const lookup = {};
+    for (const [canon, aliases] of Object.entries(CSV_FIELD_MAP)) {
+      for (const alias of aliases) lookup[normKey(alias)] = canon;
+      lookup[normKey(canon)] = canon;               // auto-incluye el nombre canónico
+    }
+    return lookup;
+  }
+
+  /**
+   * Parsea CSV (formato clave,valor o clave;valor) y retorna objeto plano.
+   * Acepta también CSV horizontal (primera fila = headers, segunda = valores).
+   */
+  function parseCSV(text) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('#'));
+    if (lines.length === 0) throw new Error('CSV vacío');
+
+    const lookup = buildLookup();
+    const result = {};
+    let mapped = 0;
+
+    // Detectar formato: si la primera línea tiene sólo 1 columna, es clave;valor
+    const firstCols = lines[0].split(/[,;]/).length;
+    const isKV = firstCols <= 2 && lines.length > 2;
+
+    if (isKV) {
+      // Formato clave,valor (una fila por parámetro)
+      for (const line of lines) {
+        const [rawKey, rawVal] = line.split(/[,;]/);
+        if (!rawKey || rawVal === undefined) continue;
+        const canon = lookup[normKey(rawKey)];
+        const num   = parseFloat(rawVal.trim().replace(/[_,]/g, ''));
+        if (canon && !isNaN(num)) { result[canon] = num; mapped++; }
+      }
+    } else {
+      // Formato horizontal: fila 0 = headers, fila 1 = valores
+      const headers = lines[0].split(/[,;]/).map(h => h.trim());
+      const values  = (lines[1] || '').split(/[,;]/);
+      headers.forEach((h, i) => {
+        const canon = lookup[normKey(h)];
+        const num   = parseFloat((values[i] || '').trim().replace(/[_,]/g, ''));
+        if (canon && !isNaN(num)) { result[canon] = num; mapped++; }
+      });
+    }
+
+    if (mapped === 0) throw new Error('Sin campos reconocidos');
+    return { data: result, mapped };
+  }
+
+  /** Aplica los datos parseados a currentInputs y DEFAULT_ASSUMPTIONS, luego llama render() */
+  function applyCSVData(data) {
+    const inputKeys      = new Set(Object.keys(SCENARIOS.base));
+    const assumptionKeys = new Set(Object.keys(ACTIVE_ASSUMPTIONS));
+    let appliedInputs = 0, appliedAssumptions = 0;
+
+    for (const [key, val] of Object.entries(data)) {
+      if (inputKeys.has(key)) {
+        currentInputs[key] = val;
+        appliedInputs++;
+        // Sync label del stepper si existe
+        const s = STEPPERS.find(s => s.key === key);
+        const lbl = document.getElementById(`lbl-${key}`);
+        if (lbl && s) lbl.textContent = `${val}${s.unit}`;
+      } else if (assumptionKeys.has(key)) {
+        ACTIVE_ASSUMPTIONS[key] = val;
+        appliedAssumptions++;
+      }
+    }
+    invalidateMonteCarloCache();
+    return { appliedInputs, appliedAssumptions };
+  }
+
+  /** Muestra un toast efímero */
+  function showToast(msg, type = 'ok', durationMs = 3000) {
+    const existing = document.querySelector('.csv-toast');
+    if (existing) existing.remove();
+
+    const t = document.createElement('div');
+    t.className = `csv-toast ${type}`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+
+    setTimeout(() => {
+      t.classList.add('fade');
+      setTimeout(() => t.remove(), 350);
+    }, durationMs);
+  }
+
+  /**
+   * PUNTO DE ENTRADA PRINCIPAL
+   * Procesa un File object → parsea → aplica → render()
+   */
+  function handleFileUpload(file) {
+    if (!file) return;
+
+    const labelEl = document.getElementById('csv-label-text');
+    const dropEl  = document.getElementById('csv-drop-zone');
+
+    if (!file.name.match(/\.csv$/i)) {
+      showToast('⚠  Solo se aceptan archivos .csv', 'err');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const { data, mapped } = parseCSV(e.target.result);
+        const { appliedInputs, appliedAssumptions } = applyCSVData(data);
+
+        // Actualizar label con nombre de archivo
+        const shortName = file.name.length > 16
+          ? file.name.slice(0, 13) + '…'
+          : file.name;
+        if (labelEl) labelEl.textContent = shortName.toUpperCase();
+        if (dropEl)  dropEl.style.borderColor = 'var(--teal-dim)';
+
+        // Recalibrar terminal completo
+        render();
+
+        showToast(
+          `✓ RECALIBRADO · ${appliedInputs} inputs · ${appliedAssumptions} supuestos`,
+          'ok'
+        );
+      } catch (err) {
+        showToast(`✗ ERROR: ${err.message}`, 'err');
+        console.error('[HealthEye CSV]', err);
+      }
+    };
+
+    reader.onerror = () => showToast('✗ No se pudo leer el archivo', 'err');
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  // ── Wiring de eventos ────────────────────────────
+  window.addEventListener('load', () => {
+    const fileInput = document.getElementById('csv-file-input');
+    const dropZone  = document.getElementById('csv-drop-zone');
+
+    // Click normal (via <label for>, nativo)
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files[0]) handleFileUpload(e.target.files[0]);
+        e.target.value = ''; // reset para permitir re-cargar mismo archivo
+      });
+    }
+
+    // Drag & Drop sobre la zona
+    if (dropZone) {
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+      });
+      dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+      });
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) handleFileUpload(file);
+      });
+    }
+
+    // Drag & Drop sobre toda la topbar como área extendida
+    const topbar = document.querySelector('.topbar');
+    if (topbar) {
+      topbar.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (dropZone) dropZone.classList.add('drag-over');
+      });
+      topbar.addEventListener('dragleave', (e) => {
+        if (!topbar.contains(e.relatedTarget) && dropZone) {
+          dropZone.classList.remove('drag-over');
+        }
+      });
+      topbar.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (dropZone) dropZone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) handleFileUpload(file);
+      });
+    }
+  });
+
+  // ==========================================
+  // BLOQUE 4: DIAGNÓSTICO DE RESILIENCIA Y SENSIBILIDAD
+  // ==========================================
+
+  /**
+   * CONFIGURACIÓN DE PALANCAS SENSIBLES
+   * Cada entrada define cuánto varía el input (±10% de su valor base o un delta fijo)
+   * y cómo mapea al nodo del grafo para el Smart Highlighting.
+   */
+  const SENSITIVITY_LEVERS = [
+    { key: 'suspension',        label: 'SUSPENSIÓN',  nodeId: 'cap_pab',      pct: true  },
+    { key: 'ocupacion',         label: 'OCUPACIÓN',   nodeId: 'cap_pab',      pct: true  },
+    { key: 'duracion_media',    label: 'DURACIÓN',    nodeId: 'cap_pab',      pct: true  },
+    { key: 'recambio',          label: 'RECAMBIO',    nodeId: 'cap_pab',      pct: true  },
+    { key: 'camas_disponibles', label: 'CAMAS',       nodeId: 'cap_camas',    pct: true  },
+    { key: 'demanda_mes',       label: 'DEMANDA',     nodeId: 'delta_lista',  pct: true  },
+  ];
+
+  /** Estado del toggle: 'fin' (financiero) o 'san' (sanitario) */
+  let _tornadoMode = 'fin';
+
+  /**
+   * Motor de Sensibilidad Dual
+   * Varía cada input crítico ±10% de forma aislada y mide:
+   *  - impacto en EBITDA (M CLP)
+   *  - impacto en Lista de Espera (casos)
+   */
+  function runSensitivityAnalysis(inputs, a = ACTIVE_ASSUMPTIONS) {
+    const base = simulate(inputs, a);
+
+    return SENSITIVITY_LEVERS.map(lev => {
+      const baseVal = inputs[lev.key];
+      const delta   = lev.pct ? baseVal * 0.10 : 1;
+
+      const _inUp   = { ...inputs, [lev.key]: baseVal + delta };
+      const _inDown = { ...inputs, [lev.key]: baseVal - delta };
+      const rUp     = simulate(_inUp,   a);
+      const rDown   = simulate(_inDown, a);
+
+      // Impacto financiero (M CLP) — vía capa económica
+      const _ecoBase = calculateEconomics(base,  inputs,  a);
+      const finUp    = calculateEconomics(rUp,   _inUp,   a).resultado_mes - _ecoBase.resultado_mes;
+      const finDown  = calculateEconomics(rDown, _inDown, a).resultado_mes - _ecoBase.resultado_mes;
+
+      // Impacto sanitario (Δ lista de espera — negativo es mejora)
+      const sanUp   = rUp.lista_espera_stock   - base.lista_espera_stock;
+      const sanDown = rDown.lista_espera_stock - base.lista_espera_stock;
+
+      // Amplitud total (valor absoluto del rango)
+      const finRange = Math.abs(finUp - finDown);
+      const sanRange = Math.abs(sanUp - sanDown);
+
+      return {
+        key:      lev.key,
+        label:    lev.label,
+        nodeId:   lev.nodeId,
+        finUp, finDown, finRange,
+        sanUp, sanDown, sanRange,
+      };
+    });
+  }
+
+  /**
+   * Tabla de Decisión Inteligente — reemplaza el Tornado mecánico.
+   * Evalúa cada variable en su DIRECCIÓN DE RIESGO REAL (no siempre −10%).
+   * Variables donde "bajar es bueno" (suspensión, duración) → escenario de riesgo es subida.
+   * Variables donde "bajar es malo" (camas, ocupación) → escenario de riesgo es bajada.
+   * Variables de demanda → ambas direcciones relevantes.
+   * Solo muestra variables de impacto material. Las de bajo impacto aparecen atenuadas.
+   */
+
+  // Metadatos de negocio por palanca: dirección de riesgo, descripción, umbral de impacto
+  const LEVER_BUSINESS = {
+    suspension: {
+      riskDir:     'up',
+      scenario:    'Si aumentan las suspensiones un 10%',
+      good:        'si se reducen',
+      riskVerb:    '↑ suspensiones',
+      goodVerb:    '↓ suspensiones',
+    },
+    ocupacion: {
+      riskDir:     'down',
+      scenario:    'Si cae la ocupación de pabellones un 10%',
+      good:        'si se mejora ocupación',
+      riskVerb:    '↓ ocupación',
+      goodVerb:    '↑ ocupación',
+    },
+    duracion_media: {
+      riskDir:     'up',
+      scenario:    'Si se alarga la duración media un 10%',
+      good:        'si se acorta',
+      riskVerb:    '↑ duración',
+      goodVerb:    '↓ duración',
+    },
+    recambio: {
+      riskDir:     'up',
+      scenario:    'Si el tiempo de recambio sube un 10%',
+      good:        'si se reduce recambio',
+      riskVerb:    '↑ recambio',
+      goodVerb:    '↓ recambio',
+    },
+    camas_disponibles: {
+      riskDir:     'down',
+      scenario:    'Si se pierden camas post-op un 10%',
+      good:        'si se agregan camas',
+      riskVerb:    '↓ camas',
+      goodVerb:    '↑ camas',
+    },
+    demanda_mes: {
+      riskDir:     'up',
+      scenario:    'Si la demanda sube un 10% sin ajustar capacidad',
+      good:        'si la demanda se modera',
+      riskVerb:    '↑ demanda',
+      goodVerb:    '↓ demanda',
+    },
+  };
+
+  function renderTornadoChart(inputs) {
+    inputs = inputs || currentInputs;
+    const el = document.getElementById('sensitivity-panel');
+    if (!el) return;
+
+    const results = runSensitivityAnalysis(inputs);
+    const mode    = _tornadoMode;  // 'fin' | 'san'
+    const base    = simulate(inputs);
+
+    // Para cada palanca, calcular impacto EN SU DIRECCIÓN DE RIESGO REAL
+    const tableRows = results.map(r => {
+      const biz      = LEVER_BUSINESS[r.key] || { riskDir:'down', scenario:'—', good:'—', riskVerb:'↓', goodVerb:'↑' };
+      const baseVal  = currentInputs[r.key];
+      const delta    = baseVal * 0.10;
+
+      // Escenario de riesgo: mover en la dirección que empeora
+      const riskInputs = {
+        ...currentInputs,
+        [r.key]: biz.riskDir === 'up' ? baseVal + delta : baseVal - delta
+      };
+      const rRisk = simulate(riskInputs);
+
+      // Impacto financiero y sanitario del escenario de riesgo
+      const finImpact = calculateEconomics(rRisk, riskInputs).resultado_mes - calculateEconomics(base, currentInputs).resultado_mes;
+      const sanImpact = rRisk.lista_espera_stock - base.lista_espera_stock; // + = más lista (peor)
+      const cxImpact  = rRisk.cirugias_mes - base.cirugias_mes;
+
+      const impact = mode === 'fin' ? finImpact : sanImpact;
+      const absImpact = Math.abs(impact);
+
+      // Formato de impacto
+      const fmtImpact = mode === 'fin'
+        ? (finImpact >= 0 ? '+' : '') + finImpact.toFixed(1) + 'M'
+        : (sanImpact >= 0 ? '+' : '') + Math.round(sanImpact) + ' casos';
+
+      // Acción recomendada: específica y orientada a la dirección correcta
+      const ACTIONS = {
+        suspension:        { accion: 'Protocolo confirmación 48h', verbo: 'Reducir suspensiones' },
+        ocupacion:         { accion: 'Optimizar agenda quirúrgica', verbo: 'Subir ocupación' },
+        duracion_media:    { accion: 'Estandarizar técnica/set', verbo: 'Reducir tiempos' },
+        camas_disponibles: { accion: 'Habilitar camas postop', verbo: 'Ampliar capacidad' },
+        demanda_mes:       { accion: 'Ampliar capacidad quirúrgica', verbo: 'Absorber demanda' },
+      };
+      const act = ACTIONS[r.key] || { accion: 'Revisar', verbo: 'Actuar' };
+
+      // Magnitud relativa (para highlight)
+      const allRanges = results.map(x => mode === 'fin' ? x.finRange : x.sanRange);
+      const maxRange  = Math.max(...allRanges, 0.001);
+      const thisRange = mode === 'fin' ? r.finRange : r.sanRange;
+      const relMag    = thisRange / maxRange;       // 0–1
+      const isCritical = relMag >= 0.85;
+      const isLow      = relMag < 0.15;             // impacto tan bajo que no vale la pena
+
+      return { r, biz, baseVal, delta, rRisk, finImpact, sanImpact, cxImpact,
+               impact, absImpact, fmtImpact, act, isCritical, isLow, relMag };
+    }).sort((a, b) => b.absImpact - a.absImpact);  // ordenar por impacto descendente
+
+    // Smart highlight del grafo (top palanca crítica)
+    const criticalResult = results.find(r => r.key === tableRows[0]?.r.key);
+    _applySmartHighlight(criticalResult, results);
+
+    el.innerHTML = `
+      <!-- Toggle modo -->
+      <div class="tornado-toggle" id="tornado-toggle">
+        <button class="tornado-toggle-btn ${mode === 'fin' ? 'active-fin' : ''}"
+                onclick="setTornadoMode('fin')">FINANCIERO</button>
+        <button class="tornado-toggle-btn ${mode === 'san' ? 'active-san' : ''}"
+                onclick="setTornadoMode('san')">LISTA ESPERA</button>
+      </div>
+
+      <!-- Contexto del toggle — explica QUÉ cambia y POR QUÉ -->
+      <div style="font-family:var(--sans);font-size:9px;color:var(--txt-dim);
+                  margin-bottom:7px;padding:5px 8px;background:var(--card);border-radius:2px;
+                  border-left:2px solid ${mode === 'fin' ? 'var(--teal)' : 'var(--red)'};line-height:1.5">
+        ${mode === 'fin'
+          ? '<strong style=\'color:var(--teal)\'>Vista financiera:</strong> muestra qué variable, si se deteriora, genera mayor pérdida en el resultado operacional mensual. Úsela para priorizar intervenciones con impacto en presupuesto.'
+          : '<strong style=\'color:var(--red)\'>Vista sanitaria:</strong> muestra qué variable, si se deteriora, acumula más pacientes en lista de espera. Úsela para priorizar intervenciones con impacto en acceso y tiempos de espera.'}
+        <span style="color:var(--txt-dim);font-size:8px;display:block;margin-top:3px">El grafo no cambia — muestra siempre el cuello de botella físico real.</span>
+      </div>
+
+      <!-- TABLA DE DECISIÓN -->
+      <div style="width:100%;overflow:hidden">
+        <!-- Encabezados -->
+        <div style="display:grid;grid-template-columns:68px 1fr auto;
+                    gap:4px;padding:3px 4px;margin-bottom:2px;
+                    font-family:var(--mono);font-size:6.5px;color:var(--txt-dim);
+                    text-transform:uppercase;letter-spacing:.5px;
+                    border-bottom:1px solid var(--border)">
+          <span>Variable</span>
+          <span>Escenario de riesgo</span>
+          <span style="text-align:right">Impacto · Acción</span>
+        </div>
+
+        <!-- Filas -->
+        ${tableRows.map(({ r, biz, baseVal, rRisk, finImpact, sanImpact, cxImpact,
+                            impact, fmtImpact, act, isCritical, isLow }) => {
+
+          const impactColor = mode === 'fin'
+            ? (finImpact < -0.05 ? 'var(--red)' : finImpact > 0.05 ? 'var(--teal)' : 'var(--txt-dim)')
+            : (sanImpact > 5 ? 'var(--red)' : sanImpact < -5 ? 'var(--teal)' : 'var(--txt-dim)');
+
+          const rowOpacity   = isLow ? '0.35' : '1';
+          const rowBorderLeft = isCritical ? '2px solid var(--red)' : '2px solid transparent';
+          const actionText    = isLow ? 'Sin acción' : act.accion;
+          const actionColor   = isLow ? 'var(--txt-dim)' : 'var(--teal)';
+
+          // Descripción corta del escenario de riesgo
+          const pct10 = Math.round(baseVal * 0.10 * 10) / 10;
+          const s     = STEPPERS.find(s => s.key === r.key);
+          const unit  = s ? s.unit : '';
+          const curVal   = baseVal.toFixed(unit === 'min' ? 0 : (baseVal < 5 ? 1 : 0));
+          const riskVal  = biz.riskDir === 'up'
+            ? (baseVal + pct10).toFixed(unit === 'min' ? 0 : (baseVal < 5 ? 1 : 0))
+            : Math.max(0, baseVal - pct10).toFixed(unit === 'min' ? 0 : (baseVal < 5 ? 1 : 0));
+
+          // Costo-efectividad: cuántas cx se pierden
+          const cxText = cxImpact !== 0
+            ? ` · ${Math.abs(Math.round(cxImpact))} cx`
+            : '';
+
+          return `
+            <div style="display:grid;grid-template-columns:68px 1fr auto;
+                        gap:4px;padding:4px 4px 4px 6px;margin-bottom:3px;
+                        background:var(--card);border-radius:2px;
+                        border-left:${rowBorderLeft};
+                        opacity:${rowOpacity};
+                        cursor:default"
+                 class="tornado-row"
+                 data-key="${r.key}"
+                 data-node="${r.nodeId}">
+
+              <!-- Columna 1: Variable -->
+              <div style="display:flex;flex-direction:column;justify-content:center">
+                <span style="font-family:var(--mono);font-size:7.5px;font-weight:800;
+                             color:${isCritical ? 'var(--red)' : 'var(--txt-dim)'};
+                             text-transform:uppercase;letter-spacing:.5px;line-height:1.3">
+                  ${r.label}
+                </span>
+                <span style="font-family:var(--mono);font-size:6.5px;color:var(--txt-dim)">
+                  hoy: ${curVal}${unit}
+                </span>
+              </div>
+
+              <!-- Columna 2: Escenario de riesgo -->
+              <div style="display:flex;flex-direction:column;justify-content:center">
+                <span style="font-family:var(--mono);font-size:7px;color:var(--txt-dim);line-height:1.4">
+                  ${biz.riskVerb} → <span style="color:var(--amber)">${riskVal}${unit}</span>
+                </span>
+                <span style="font-family:var(--mono);font-size:6.5px;color:var(--txt-dim)">
+                  ${biz.scenario.toLowerCase().replace('un 10%', '').trim()}${cxText}
+                </span>
+              </div>
+
+              <!-- Columna 3: Impacto + Acción -->
+              <div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;min-width:72px">
+                <span style="font-family:var(--mono);font-size:9px;font-weight:800;
+                             color:${impactColor};line-height:1">
+                  ${fmtImpact}
+                </span>
+                <span style="font-family:var(--mono);font-size:6.5px;
+                             color:${actionColor};margin-top:2px;text-align:right;line-height:1.2">
+                  ${actionText}
+                </span>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+
+      <!-- Nota al pie -->
+      <div style="font-family:var(--mono);font-size:6.5px;color:var(--txt-dim);
+                  margin-top:5px;line-height:1.4;text-align:center;opacity:.7">
+        Escenario de riesgo evaluado en la dirección que empeora el ${mode === 'fin' ? 'resultado' : 'acceso'} · variación ±10%
+      </div>`;
+
+    // Conectar tooltips
+    if (typeof window._postTornadoHook === 'function') window._postTornadoHook();
+  }
+
+  /**
+   * Smart Highlighting — Inteligencia de Grafo
+   * Quita .node-critical-alert de todos los nodos,
+   * luego aplica la clase al nodo correspondiente a la palanca crítica.
+   */
+  function _applySmartHighlight(criticalResult, allResults) {
+    // Solo limpiar el highlight de hover (node-critical-alert).
+    // NUNCA tocar glow-amber del cuello de botella — ese representa realidad física.
+    document.querySelectorAll('.node-critical-alert').forEach(el => {
+      el.classList.remove('node-critical-alert');
+    });
+    // El highlight rojo solo aparece durante hover interactivo del usuario, no permanente.
+  }
+
+  /** Setter del modo toggle, expuesto globalmente para los onclick */
+  window.setTornadoMode = (mode) => {
+    _tornadoMode = mode;
+    renderTornadoChart(currentInputs);
+  };
+
+  // ── Debounce para Tornado (300ms — igual que Monte Carlo) ──
+  let _tornadoTimer = null;
+  function renderTornadoDebounced() {
+    clearTimeout(_tornadoTimer);
+    _tornadoTimer = setTimeout(() => renderTornadoChart(currentInputs), 300);
+  }
+
+  // ── FASE 7 — TAREA 1: Executive Summary (Cerebro Narrativo) ──────────
+  /**
+   * renderExecutiveSummary — genera chip de riesgo en topbar
+   * Usa los resultados de runSensitivityAnalysis() para identificar
+   * la variable de mayor impacto negativo y cuantificar el riesgo.
+   */
+  function renderExecutiveSummary(vm, inputs) {
+    const chip = document.getElementById('exec-summary-chip');
+    if (!chip) return;
+
+    // ── Modo privado: chip pre-calculado en applyContext via vm ──────────
+    if (vm && vm.execSummaryChip) {
+      chip.className   = vm.execSummaryChip.cls;
+      chip.textContent = vm.execSummaryChip.text;
+      return;
+    }
+
+    // ── Modo público ─────────────────────────────────────────────────────
+    const results = runSensitivityAnalysis(inputs);
+    if (!results || results.length === 0) return;
+
+    const sorted = [...results].sort((a, b) => a.finDown - b.finDown);
+    const worst  = sorted[0];
+    if (!worst) return;
+
+    const lossM  = Math.abs(worst.finDown).toFixed(1);
+    const ACTIONS = {
+      suspension:        'REDUCIR SUSPENSIONES',
+      ocupacion:         'MEJORAR OCUPACIÓN',
+      duracion_media:    'OPTIMIZAR DURACIÓN',
+      camas_disponibles: 'AMPLIAR CAMAS',
+      demanda_mes:       'GESTIONAR DEMANDA',
+    };
+    const accion = ACTIONS[worst.key] || 'REVISAR OPERACIÓN';
+
+    // ── TAREA 5: leer déficit Monte Carlo ────────────────────────────────
+    const mc = runMonteCarloCached(inputs);
+    const isPanic  = mc.pct_deficit > 20;
+    const isOk     = worst.finDown >= 0 && !isPanic;
+
+    if (isOk) {
+      chip.className = 'ok';
+      // Cuantificar el retorno disponible incluso en escenario "ok"
+      const base    = simulate(inputs);
+      const _optI2  = { ...inputs, suspension: Math.max(0, inputs.suspension - 5), ocupacion: Math.min(98, inputs.ocupacion + 5) };
+      const opt     = simulate(_optI2);
+      const gapM    = (calculateEconomics(opt, _optI2).resultado_mes - calculateEconomics(base, inputs).resultado_mes).toFixed(1);
+      chip.textContent = `✓ Sin riesgo financiero · Margen sin capturar: +${gapM}M/mes con eficiencia operacional — Palanca: ${accion}`;
+    } else if (isPanic) {
+      chip.className = 'panic';
+      chip.textContent = `🚨 CRISIS FINANCIERA · MC déficit ${mc.pct_deficit.toFixed(0)}% · ${worst.label} crítico · Priorizar: ${accion}`;
+    } else {
+      chip.className = '';
+      chip.textContent = `⚠ RIESGO CRÍTICO: ${worst.label} · Una caída del 10% cuesta $${lossM}M este mes. Priorizar: ${accion}`;
+    }
+  }
+
+  // Dispara executive summary con el mismo timer del tornado
+  function renderExecutiveSummaryDebounced(vm, inputs) {
+    clearTimeout(_tornadoTimer);
+    _tornadoTimer = setTimeout(() => {
+      renderTornadoChart(inputs);
+      renderExecutiveSummary(vm, inputs);
+    }, 300);
+  }
+
+  // ==========================================
+  // FASE 7 — TAREA 3: Tooltips Cadena Causal
+  // FASE 7 — TAREA 4: Hover Sync Tornado ↔ Grafo
+  // ==========================================
+
+  // ==========================================
+  // FASE 8: EXTENSIÓN HORARIA + WATERFALL + PROYECCIÓN
+  // ==========================================
+
+  /** Toggle Modo Extensión Horaria */
+  window.toggleExtension = function() {
+    currentInputs._modo_extension = !currentInputs._modo_extension;
+    const btn    = document.getElementById('ext-toggle-btn');
+    const status = document.getElementById('ext-status');
+    const wrap   = document.getElementById('ext-toggle-wrap');
+    const isOn   = currentInputs._modo_extension;
+    if (btn)    btn.classList.toggle('on', isOn);
+    if (status) { status.textContent = isOn ? 'ON ×1.5' : 'OFF'; status.classList.toggle('on', isOn); }
+    if (wrap)   wrap.classList.toggle('active', isOn);
+    invalidateMonteCarloCache();
+    render();
+  };
+
+  /**
+   * renderWaterfall — Waterfall chart Bloomberg de presupuesto mensual
+   * Columnas: DIPRES → +FONASA → −FIJO → −VARIABLE → TOTAL
+   */
+  function renderWaterfall(r, eco, inputs) {
+    const el = document.getElementById('financial-waterfall');
+    if (!el) return;
+
+    // Usa waterfall del contrato económico
+    const data    = (eco && eco.waterfall && eco.waterfall.length)
+      ? eco.waterfall.map(d => ({ ...d, positive: d.val >= 0 }))
+      : [];
+    const surplus = eco ? eco.resultado_mes : 0;
+    const maxAbs   = Math.max(...data.map(d => Math.abs(d.val)), 0.01);
+    const H        = 80;
+
+    const bars = data.map((d, i) => {
+      const h      = Math.max(4, Math.round((Math.abs(d.val) / maxAbs) * H));
+      const fmt    = (d.val >= 0 ? '+' : '') + d.val.toFixed(1) + 'M';
+      const isTotal = i === data.length - 1;
+      return `
+        <div class="wf-bar" style="height:${h}px;background:${d.color};opacity:${isTotal ? 1 : 0.75};">
+          <span class="wf-val" style="color:${d.color}">${fmt}</span>
+          <span class="wf-label">${d.label}</span>
+          ${!isTotal ? `<div class="wf-connector"></div>` : ''}
+        </div>`;
+    }).join('');
+
+    const color    = surplus >= 0 ? 'var(--teal)' : 'var(--red)';
+    const extBadge = inputs._modo_extension
+      ? `<span style="font-family:var(--mono);font-size:7px;padding:1px 5px;border-radius:2px;
+            background:rgba(245,158,11,.15);color:var(--amber);border:1px solid rgba(245,158,11,.4);
+            margin-left:6px">HORAS EXTRA ×1.5</span>`
+      : '';
+    // Nota de sobreproducción si aplica
+    const sobreprodNote = (eco && eco.sobreproduccion > 0)
+      ? `<span style="font-family:var(--mono);font-size:7px;color:var(--amber);margin-left:6px">
+           SOBREPROD. ${Math.round(eco.sobreproduccion)} cx · ingreso parcial ${Math.round(ACTIVE_ASSUMPTIONS.factor_pago_sobreproduccion * 100)}%
+         </span>`
+      : '';
+
+    el.innerHTML = `
+      <div class="wf-container">${bars}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  font-family:var(--mono);font-size:8px;margin-top:4px;flex-wrap:wrap;gap:4px">
+        <span style="color:var(--txt-dim)">Ingresos: <span style="color:var(--teal)">${((ACTIVE_ASSUMPTIONS.presupuesto_dipres_mes + (eco ? eco.ingreso_fonasa_real : 0)) / 1e6).toFixed(1)}M</span>
+          · Costos: <span style="color:var(--red)">${((ACTIVE_ASSUMPTIONS.costo_rrhh_fijo_mes + r.cirugias_mes * ACTIVE_ASSUMPTIONS.costo_variable_cirugia) / 1e6).toFixed(1)}M</span></span>
+        <span style="color:${color};font-weight:800">RESULTADO: ${surplus >= 0 ? '+' : ''}${surplus.toFixed(1)}M${extBadge}${sobreprodNote}</span>
+      </div>`;
+  }
+
+  /**
+   * renderProjection — Proyección a 6 meses de la lista de espera
+   * Genera puntos: stock_t = lista_espera_inicial + delta_lista * t
+   */
+  function renderProjection(r, vm, inputs) {
+    const el = document.getElementById('projection-chart');
+    if (!el) return;
+    const projTitle = document.getElementById('proj-panel-title');
+    if (projTitle) projTitle.textContent = vm.labels.projectionTitle;
+
+    const MESES = 6;
+    const proj     = projectWaitlist(inputs, 24);
+    const msg      = proj.converge ? `CIERRA EN ${proj.cierre_en_mes} MESES` : 'NO CIERRA';
+    const msgColor = proj.converge ? 'var(--teal)' : 'var(--red)';
+
+    // ── Mensaje ejecutivo encima del gráfico ─────────────────────────────
+    const execMsgEl = document.getElementById('proj-exec-msg');
+    if (execMsgEl) {
+      const delta24   = Math.round(r.delta_lista);
+      const stock24   = Math.round(proj.serie[proj.serie.length - 1].stock);
+      if (proj.converge) {
+        execMsgEl.style.borderColor = 'rgba(45,212,191,.3)';
+        execMsgEl.style.color       = 'var(--teal)';
+        execMsgEl.textContent       = vm.labels.execMsgConverge(proj.cierre_en_mes);
+      } else {
+        execMsgEl.style.borderColor = 'rgba(239,68,68,.3)';
+        execMsgEl.style.color       = 'var(--red)';
+        execMsgEl.textContent       = vm.labels.execMsgDiverge(delta24, stock24);
+      }
+    }
+
+    const stock0 = ACTIVE_ASSUMPTIONS.lista_espera_inicial;
+    const delta  = r.delta_lista;  // casos/mes (positivo = crece, negativo = mejora)
+
+    // Puntos [mes, stock]
+    const pts = Array.from({ length: MESES + 1 }, (_, i) => ({
+      mes: i,
+      stock: Math.max(0, Math.round(stock0 + delta * i))
+    }));
+
+    const maxStock = Math.max(...pts.map(p => p.stock), 1);
+    const minStock = Math.min(...pts.map(p => p.stock), 0);
+    const range    = maxStock - minStock || 1;
+
+    const W = 220, H = 52;
+    const pad = { l: 28, r: 6, t: 8, b: 4 };
+    const gW  = W - pad.l - pad.r;
+    const gH  = H - pad.t - pad.b;
+
+    // Coordenadas SVG
+    const cx = i => pad.l + (i / MESES) * gW;
+    const cy = v => pad.t + gH - ((v - minStock) / range) * gH;
+
+    const polyline = pts.map(p => `${cx(p.mes)},${cy(p.stock)}`).join(' ');
+    const area     = `${cx(0)},${cy(minStock)} ` + polyline + ` ${cx(MESES)},${cy(minStock)}`;
+
+    const lineColor  = delta > 0 ? 'var(--red)' : 'var(--teal)';
+    const areaColor  = delta > 0 ? 'rgba(239,68,68,.12)' : 'rgba(45,212,191,.10)';
+    const trendLabel = delta > 0 ? `▲ +${Math.round(delta)}/mes` : `▼ ${Math.round(delta)}/mes`;
+    const trendColor = delta > 0 ? 'var(--red)' : 'var(--teal)';
+
+    // Meses labels
+    const now = new Date();
+    const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const monthLabels = Array.from({ length: MESES + 1 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      return monthNames[d.getMonth()];
+    });
+
+    // Círculos en puntos clave (inicio, fin)
+    const dotStart = `<circle cx="${cx(0)}" cy="${cy(pts[0].stock)}" r="3" fill="${lineColor}" opacity=".8"/>`;
+    const dotEnd   = `<circle cx="${cx(MESES)}" cy="${cy(pts[MESES].stock)}" r="3" fill="${lineColor}"/>
+      <text x="${cx(MESES)+5}" y="${cy(pts[MESES].stock)+4}"
+        font-family="var(--mono)" font-size="7" fill="${lineColor}" font-weight="800">${pts[MESES].stock}</text>`;
+
+    // Etiqueta inicial
+    const dotStartLabel = `<text x="${cx(0)-3}" y="${cy(pts[0].stock)-5}"
+      font-family="var(--mono)" font-size="7" fill="var(--txt-dim)" text-anchor="middle">${pts[0].stock}</text>`;
+
+    // Eje Y — línea base + label
+    const yAxis = `<line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${pad.t+gH}"
+      stroke="var(--border)" stroke-width="1"/>`;
+
+    const isPrivadoProj   = vm.flags.isPrivate;
+    const projLegendLabel = vm.labels.projLegend;
+    const projTitleLabel  = isPrivadoProj
+      ? (proj.converge ? vm.labels.projTitleConverge(proj.cierre_en_mes) : vm.labels.projTitleDiverge)
+      : msg;
+    const projTitleColor  = isPrivadoProj
+      ? (proj.converge ? 'var(--teal)' : 'var(--red)')
+      : msgColor;
+
+    el.innerHTML = `
+      <div style="font-family:var(--mono);font-size:9px;font-weight:800;color:${projTitleColor};
+                  letter-spacing:1px;margin-bottom:4px;text-align:center">
+        ${projTitleLabel}
+      </div>
+      <div class="proj-legend">
+        <span><div class="dot" style="background:${lineColor}"></div>${projLegendLabel}</span>
+        <span style="color:${trendColor};font-weight:700">${trendLabel}</span>
+      </div>
+      <div class="proj-svg-wrap">
+        <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="overflow:visible">
+          ${yAxis}
+          <polygon points="${area}" fill="${areaColor}"/>
+          <polyline points="${polyline}" fill="none" stroke="${lineColor}" stroke-width="1.8"
+            stroke-linejoin="round" stroke-linecap="round"/>
+          ${dotStart}${dotStartLabel}${dotEnd}
+          <!-- Línea de meta: lista = 0 si es posible -->
+          ${minStock === 0 ? `<line x1="${pad.l}" y1="${cy(0)}" x2="${pad.l+gW}" y2="${cy(0)}"
+            stroke="var(--teal)" stroke-width="1" stroke-dasharray="3,3" opacity=".4"/>` : ''}
+        </svg>
+      </div>
+      <div class="proj-month-labels">
+        ${monthLabels.map(m => `<span>${m}</span>`).join('')}
+      </div>
+      <div style="font-family:var(--mono);font-size:7px;color:var(--txt-dim);margin-top:4px;text-align:right">
+        Stock 6m: <span style="color:${lineColor};font-weight:800">${pts[MESES].stock} casos</span>
+      </div>`;
+  }
+
+  // Reloj eliminado (topbar simplificado)
+
+  const _tooltip   = document.getElementById('causal-tooltip');
+  const _ctTitle   = document.getElementById('ct-title');
+  const _ctChain   = document.getElementById('ct-chain');
+
+  // Descripciones de palanca para el tooltip
+  const LEVER_DESC = {
+    suspension:        'tasa de suspensión quirúrgica',
+    ocupacion:         'tasa de ocupación de pabellones',
+    duracion_media:    'duración media por cirugía',
+    recambio:          'tiempo de recambio entre cirugías',
+    camas_disponibles: 'camas post-op disponibles',
+    demanda_mes:       'demanda quirúrgica mensual',
+  };
+
+  // Narrativas ejecutivas por variable
+  const TOOLTIP_NARRATIVE = {
+    suspension: (cur, riskVal, dCx, finImpact, sanImpact) => {
+      if (Math.abs(dCx) < 1) return { h: 'Suspensión ya controlada', b: 'En el nivel actual, una fluctuación del 10% no mueve producción. El cuello real está en otra variable.' };
+      return { h: 'Si las suspensiones aumentan de ' + cur + '% a ' + riskVal + '%',
+               b: 'Se pierden ' + Math.abs(Math.round(dCx)) + ' cirugías/mes. La lista crece ' + Math.round(sanImpact) + ' casos y el resultado baja ' + Math.abs(finImpact).toFixed(1) + 'M CLP. Palanca: protocolo de confirmación 48h antes de cada pabellón.' };
+    },
+    ocupacion: (cur, riskVal, dCx, finImpact, sanImpact) => {
+      if (Math.abs(dCx) < 1) return { h: 'Ocupación ya cerca del techo', b: 'El sistema está saturado en uso de pabellones. El cuello que limita producción está en otro eslabón.' };
+      return { h: 'Si la ocupación cae de ' + cur + '% a ' + riskVal + '%',
+               b: 'Los pabellones pierden ' + Math.abs(Math.round(dCx)) + ' cirugías/mes — horas pagadas sin producción. Impacto: ' + Math.abs(finImpact).toFixed(1) + 'M CLP. Acción: revisar agenda y eliminar brechas entre turnos.' };
+    },
+    duracion_media: (cur, riskVal, dCx, finImpact, sanImpact) => {
+      if (Math.abs(dCx) < 1) return { h: 'Duración estable', b: 'En el margen actual, variaciones de 10% no mueven el throughput. Hay holgura en el tiempo de pabellón.' };
+      return { h: 'Si cada cirugía dura ' + riskVal + ' min en vez de ' + cur + ' min',
+               b: 'Se pierden ' + Math.abs(Math.round(dCx)) + ' cirugías/mes sin tocar camas ni pabellones — solo por tiempo de quirófano. Estandarizar el set quirúrgico recupera esto en 4 a 8 semanas.' };
+    },
+    camas_disponibles: (cur, riskVal, dCx, finImpact, sanImpact) => {
+      if (Math.abs(dCx) < 1) return { h: 'Camas no son el cuello actual', b: 'El pabellón limita antes que las camas post-op. Ampliar camas hoy no aumenta producción — hay que atacar el pabellón primero.' };
+      return { h: 'Si se pierden camas postop: de ' + cur + ' a ' + riskVal,
+               b: 'Las camas son el cuello real. Cada cama menos bloquea cirugías. La lista crece ' + Math.round(sanImpact) + ' casos. Habilitar camas es la acción más urgente disponible.' };
+    },
+    recambio: (cur, riskVal, dCx, finImpact, sanImpact) => {
+      if (Math.abs(dCx) < 1) return { h: 'Recambio no es cuello actual', b: 'En el margen actual, reducir el recambio no mueve la producción. El cuello está en otro eslabón del sistema.' };
+      return { h: 'Si el recambio sube de ' + cur + ' min a ' + riskVal + ' min',
+               b: 'Se pierden ' + Math.abs(Math.round(dCx)) + ' cirugías/mes — el tiempo entre casos consume capacidad de pabellón. Reducir a ' + cur + ' min con protocolo de limpieza paralela recupera ' + Math.abs(Math.round(dCx)) + ' cx/mes.' };
+    },
+    demanda_mes: (cur, riskVal, dCx, finImpact, sanImpact) => {
+      return { h: 'Si la demanda sube a ' + riskVal + ' casos/mes',
+               b: 'La capacidad actual no absorbe ese volumen: la lista crece ' + Math.round(sanImpact) + ' casos adicionales por mes. Sin ampliar capacidad, el stock acumulado se vuelve crítico en 6 meses.' };
+    },
+  };
+
+  function showCausalTooltip(row, mouseX, mouseY) {
+    if (!_tooltip || !_ctTitle || !_ctChain) return;
+
+    const key  = row.dataset.key;
+    const biz  = LEVER_BUSINESS[key] || {};
+    const s    = STEPPERS.find(s => s.key === key);
+    const unit = s ? s.unit : '';
+    const cur  = currentInputs[key] || 0;
+    const delta = cur * 0.10;
+    const riskDir = biz.riskDir || 'down';
+    const decimals = (unit === 'min' || cur >= 5) ? 0 : 1;
+    const riskVal = riskDir === 'up'
+      ? (cur + delta).toFixed(decimals)
+      : Math.max(0, cur - delta).toFixed(decimals);
+    const curFmt = cur.toFixed(decimals);
+
+    const base   = simulate(currentInputs);
+    const riskIn = { ...currentInputs, [key]: riskDir === 'up' ? cur + delta : Math.max(0, cur - delta) };
+    const rRisk  = simulate(riskIn);
+    const dCx    = rRisk.cirugias_mes - base.cirugias_mes;
+    const finImpact = calculateEconomics(rRisk, riskIn).resultado_mes - calculateEconomics(base, currentInputs).resultado_mes;
+    const sanImpact = rRisk.lista_espera_stock - base.lista_espera_stock;
+
+    const narFn = TOOLTIP_NARRATIVE[key];
+    const nar   = narFn ? narFn(curFmt, riskVal, dCx, finImpact, sanImpact)
+                        : { h: key, b: 'Sin narrativa disponible.' };
+
+    const impactColor = finImpact < -0.05 ? '#ef4444' : finImpact > 0.05 ? '#2dd4bf' : '#8496b0';
+
+    _ctTitle.textContent = nar.h;
+    _ctChain.innerHTML =
+      '<div style="font-family:var(--sans);font-size:9.5px;color:var(--txt);line-height:1.55;margin-bottom:8px">' + nar.b + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;border-top:1px solid var(--border);padding-top:7px">' +
+        '<div style="text-align:center"><div style="font-family:var(--mono);font-size:7px;color:var(--txt-dim);margin-bottom:2px">CX/MES</div>' +
+        '<div style="font-family:var(--mono);font-size:11px;font-weight:800;color:' + (dCx < -0.5 ? '#ef4444' : dCx > 0.5 ? '#2dd4bf' : '#8496b0') + '">' + (dCx >= 0 ? '+' : '') + Math.round(dCx) + '</div></div>' +
+        '<div style="text-align:center"><div style="font-family:var(--mono);font-size:7px;color:var(--txt-dim);margin-bottom:2px">RESULTADO</div>' +
+        '<div style="font-family:var(--mono);font-size:11px;font-weight:800;color:' + impactColor + '">' + (finImpact >= 0 ? '+' : '') + finImpact.toFixed(1) + 'M</div></div>' +
+        '<div style="text-align:center"><div style="font-family:var(--mono);font-size:7px;color:var(--txt-dim);margin-bottom:2px">\u0394 LISTA</div>' +
+        '<div style="font-family:var(--mono);font-size:11px;font-weight:800;color:' + (sanImpact > 5 ? '#ef4444' : sanImpact < -5 ? '#2dd4bf' : '#8496b0') + '">' + (sanImpact >= 0 ? '+' : '') + Math.round(sanImpact) + '</div></div>' +
+      '</div>';
+
+    // Posicionar tooltip
+    const TW = 290, TH = 200;
+    let tx = mouseX + 14;
+    let ty = mouseY - 30;
+    if (tx + TW > window.innerWidth  - 10) tx = mouseX - TW - 14;
+    if (ty + TH > window.innerHeight - 10) ty = window.innerHeight - TH - 10;
+    if (ty < 10) ty = 10;
+    _tooltip.style.left = tx + 'px';
+    _tooltip.style.top  = ty + 'px';
+    _tooltip.classList.add('visible');
+  }
+
+  function hideCausalTooltip() {
+    if (_tooltip) _tooltip.classList.remove('visible');
+  }
+
+  /**
+   * wireTooltipsAndSync — conecta mouseenter/mouseleave a las filas del tornado.
+   * Llamado después de que renderTornadoChart() construya el HTML.
+   * TAREA 4: hover aplica .node-critical-alert al nodo del grafo correspondiente.
+   */
+  function wireTooltipsAndSync() {
+    // Guardar el nodo que tenía el highlight permanente antes del hover
+    let _permanentNode = null;
+
+    const rows = document.querySelectorAll('#sensitivity-panel .tornado-row');
+    rows.forEach(row => {
+      row.style.cursor = 'crosshair';
+
+      row.addEventListener('mouseenter', (e) => {
+        // ── TAREA 3: mostrar tooltip ──────────────────────────────────────
+        showCausalTooltip(row, e.clientX, e.clientY);
+
+        // ── TAREA 4: sync al grafo ────────────────────────────────────────
+        const nodeId   = row.dataset.node;
+        if (!nodeId) return;
+        const circleEl = document.getElementById(`node-circle-${nodeId}`);
+        if (!circleEl) return;
+
+        // Preservar el nodo con highlight permanente actual
+        _permanentNode = document.querySelector('.node-critical-alert');
+
+        // Quitar todos los highlights
+        document.querySelectorAll('.node-critical-alert').forEach(el => {
+          el.classList.remove('node-critical-alert');
+        });
+        // Aplicar al nodo bajo hover
+        circleEl.classList.add('node-critical-alert');
+      });
+
+      row.addEventListener('mousemove', (e) => {
+        // Seguir el cursor mientras está sobre la fila
+        if (_tooltip && _tooltip.classList.contains('visible')) {
+          const TW = 260, TH = 160;
+          let tx = e.clientX + 14;
+          let ty = e.clientY - 20;
+          if (tx + TW > window.innerWidth  - 10) tx = e.clientX - TW - 14;
+          if (ty + TH > window.innerHeight - 10) ty = window.innerHeight - TH - 10;
+          _tooltip.style.left = tx + 'px';
+          _tooltip.style.top  = ty + 'px';
+        }
+      });
+
+      row.addEventListener('mouseleave', () => {
+        // ── TAREA 3: ocultar tooltip ──────────────────────────────────────
+        hideCausalTooltip();
+
+        // ── TAREA 4: restaurar highlight permanente ───────────────────────
+        document.querySelectorAll('.node-critical-alert').forEach(el => {
+          el.classList.remove('node-critical-alert');
+        });
+        if (_permanentNode) {
+          _permanentNode.classList.add('node-critical-alert');
+        }
+      });
+    });
+  }
+
+  // Parchear renderTornadoChart para que llame wireTooltipsAndSync al final
+  const _origRenderTornado = renderTornadoChart;
+  // Override: después del render original, conectar los eventos
+  window._postTornadoHook = wireTooltipsAndSync;
+
+  // ── TAB NAVIGATION ───────────────────────────────────────────────────────
+  let activeTab = 'decision';
+  function setActiveTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tabBtn === tab);
+    });
+    document.querySelectorAll('.tab-view').forEach(v => {
+      v.classList.remove('active');
+    });
+    const view = document.getElementById(`tab-${tab}`);
+    if (view) view.classList.add('active');
+    // Resize mainGraph if switching to operaciones
+    if (tab === 'operaciones') {
+      const svg = document.getElementById('mainGraph');
+      if (svg) { svg.style.width = '100%'; svg.style.height = '100%'; }
+    }
+  }
+
+  // ── RESET TOTAL ──────────────────────────────────────────────────────────
+  function resetToBaseline() {
+    currentInputs = { ...SCENARIOS.base };
+    ACTIVE_ASSUMPTIONS = { ...BASELINE_ASSUMPTIONS };
+    invalidateMonteCarloCache();
+    // Sincronizar labels de los steppers
+    STEPPERS.forEach(s => {
+      const lbl = document.getElementById(`lbl-${s.key}`);
+      if (lbl) lbl.textContent = `${currentInputs[s.key]}${s.unit}`;
+    });
+    render();
+  }
+
+</script>
+
+
+</body>
+</html>

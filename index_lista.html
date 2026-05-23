@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ListaEye — Monitor de Listas de Espera | GL Strategic × Minsal–FONASA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0D1B2A;--emerald:#1D9E75;--emerald-lt:#2DC994;--teal:#007B83;
+  --ink:#0D1117;--surface:#131920;--panel:#1A2332;--border:#243044;
+  --text:#E8EDF5;--muted:#7A8BA0;--green:#1D9E75;--red:#E05252;
+  --warn:#C9A84C;--blue:#378ADD;--violet:#8B7CF6;--gold:#C9A84C;
+}
+html,body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--ink);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(29,158,117,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(29,158,117,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.layout{position:relative;z-index:1}
+header{background:linear-gradient(135deg,#0D1117,#131920);border-bottom:2px solid rgba(29,158,117,.3);padding:0 2rem;height:68px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:38px;height:38px;background:linear-gradient(135deg,var(--emerald),var(--emerald-lt));border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.72rem;letter-spacing:.5px;text-align:center;line-height:1.2}
+.brand-name{font-size:1.1rem;font-weight:700;color:var(--text)}.brand-name span{color:var(--emerald-lt)}
+.brand-sub{font-size:.62rem;color:var(--muted);letter-spacing:.05em}
+.header-right{display:flex;align-items:center;gap:1rem}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);font-family:monospace}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);box-shadow:0 0 6px var(--emerald);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+select{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:8px;font-size:.8rem;cursor:pointer}
+select:focus{outline:none;border-color:var(--emerald)}
+.shell{display:grid;grid-template-columns:225px 1fr;min-height:calc(100vh - 68px)}
+aside{background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:68px;height:calc(100vh - 68px);overflow-y:auto}
+.client-badge{margin:0 1rem 1.5rem;padding:.9rem 1rem;background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.25);border-radius:10px}
+.cb-label{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.cb-name{font-size:.88rem;color:var(--emerald-lt);font-weight:700;margin-top:.25rem}
+.cb-detail{font-size:.65rem;color:var(--muted);margin-top:.2rem}
+.nav-section{padding:.5rem 1rem;margin-bottom:.5rem}
+.nav-label{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:.6rem}
+.nav-item{display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:7px;cursor:pointer;font-size:.8rem;color:var(--muted);transition:all .2s;margin-bottom:.15rem;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover,.nav-item.active{background:rgba(29,158,117,.1);color:var(--emerald-lt)}
+.nav-item.active{border-left:3px solid var(--emerald);padding-left:calc(.8rem - 3px)}
+main{padding:2rem;overflow-y:auto}
+.panel-wrap{display:none}.panel-wrap.active{display:block}
+.page-title{font-size:1.6rem;font-weight:700;color:var(--text);margin-bottom:.25rem}
+.page-sub{font-size:.8rem;color:var(--muted);margin-bottom:1.5rem}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 0 24px rgba(29,158,117,.1)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--emerald),transparent)}
+.kpi.red::before{background:linear-gradient(90deg,var(--red),transparent)}
+.kpi.blue::before{background:linear-gradient(90deg,var(--blue),transparent)}
+.kpi.gold::before{background:linear-gradient(90deg,var(--gold),transparent)}
+.kpi.violet::before{background:linear-gradient(90deg,var(--violet),transparent)}
+.kpi.teal::before{background:linear-gradient(90deg,var(--teal),transparent)}
+.kpi-label{font-size:.67rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi-val{font-size:1.75rem;font-weight:700;margin:.4rem 0 .2rem;line-height:1}
+.kpi-val.green{color:var(--green)}.kpi-val.red{color:var(--red)}.kpi-val.blue{color:var(--blue)}.kpi-val.gold{color:var(--gold)}.kpi-val.violet{color:var(--violet)}.kpi-val.teal{color:var(--teal)}.kpi-val.emerald{color:var(--emerald-lt)}
+.kpi-sub{font-size:.7rem;color:var(--muted)}.kpi-sub.up{color:var(--green)}.kpi-sub.down{color:var(--red)}
+.kpi-icon{position:absolute;top:1rem;right:1.25rem;font-size:1.4rem;opacity:.13}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.card-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;font-size:.92rem;font-weight:600}
+.badge{font-size:.62rem;padding:.18rem .55rem;border-radius:12px;background:rgba(29,158,117,.12);color:var(--emerald-lt);letter-spacing:.05em;text-transform:uppercase}
+.badge.ok{background:rgba(29,158,117,.12);color:var(--green)}
+.badge.err{background:rgba(224,82,82,.12);color:var(--red)}
+.badge.warn{background:rgba(201,168,76,.12);color:var(--warn)}
+.badge.blue{background:rgba(55,138,221,.12);color:var(--blue)}
+.badge.violet{background:rgba(139,124,246,.12);color:var(--violet)}
+.badge.teal{background:rgba(0,123,131,.12);color:var(--teal)}
+.chart-row{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.chart-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.chart-wrap{position:relative;height:200px}
+.feed{display:flex;flex-direction:column;gap:6px}
+.feed-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:.78rem;transition:all .4s}
+.feed-item.new{border-color:rgba(29,158,117,.4);background:rgba(29,158,117,.05)}
+.feed-item.alert{border-color:rgba(224,82,82,.4);background:rgba(224,82,82,.05)}
+.feed-item.warn{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.05)}
+.feed-item.info{border-color:rgba(55,138,221,.4);background:rgba(55,138,221,.05)}
+.fi-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
+.fi-dot.ok{background:rgba(29,158,117,.2);color:var(--green)}
+.fi-dot.err{background:rgba(224,82,82,.2);color:var(--red)}
+.fi-dot.warn{background:rgba(201,168,76,.2);color:var(--warn)}
+.fi-dot.blue{background:rgba(55,138,221,.2);color:var(--blue)}
+.fi-dot.violet{background:rgba(139,124,246,.2);color:var(--violet)}
+.fi-name{font-weight:600;color:var(--text);margin-bottom:3px}
+.fi-meta{color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.fi-save{color:var(--green);font-weight:600}
+.fi-crit{color:var(--red);font-weight:600}
+.status-pill{display:inline-flex;align-items:center;padding:.15rem .5rem;border-radius:10px;font-size:.65rem;font-weight:600;white-space:nowrap}
+.sp-ok{background:rgba(29,158,117,.15);color:var(--green)}
+.sp-warn{background:rgba(201,168,76,.15);color:var(--warn)}
+.sp-err{background:rgba(224,82,82,.15);color:var(--red)}
+.sp-blue{background:rgba(55,138,221,.15);color:var(--blue)}
+.sp-violet{background:rgba(139,124,246,.15);color:var(--violet)}
+.sp-teal{background:rgba(0,123,131,.15);color:var(--teal)}
+.btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:none;font-size:.78rem;cursor:pointer;color:var(--muted);transition:all .2s}
+.btn:hover{background:rgba(29,158,117,.1);color:var(--emerald-lt);border-color:rgba(29,158,117,.3)}
+.btn-green{background:rgba(29,158,117,.15);color:var(--green);border-color:rgba(29,158,117,.3);font-weight:700}
+.btn-green:hover{background:rgba(29,158,117,.28)}
+.btn-red{background:rgba(224,82,82,.15);color:var(--red);border-color:rgba(224,82,82,.3);font-weight:700}
+.btn-gold{background:var(--gold);color:#0D1117;border-color:var(--gold);font-weight:700}
+.sim-bar{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center}
+.sim-label{font-size:.75rem;color:var(--muted)}
+.alert-banner{padding:10px 16px;border-radius:8px;margin-bottom:.75rem;font-size:.8rem;display:flex;align-items:flex-start;gap:10px;border:1px solid}
+.ab-err{background:rgba(224,82,82,.08);border-color:rgba(224,82,82,.3);color:#F08080}
+.ab-warn{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.3);color:var(--warn)}
+.ab-ok{background:rgba(29,158,117,.08);border-color:rgba(29,158,117,.3);color:var(--green)}
+.ab-blue{background:rgba(55,138,221,.08);border-color:rgba(55,138,221,.3);color:#7BB8F0}
+.inst-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+.inst-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.1rem;cursor:pointer;transition:all .2s}
+.inst-card:hover{border-color:rgba(29,158,117,.5);transform:translateY(-1px)}
+.inst-card.sel{border-color:var(--emerald);background:rgba(29,158,117,.06)}
+.ic-sigla{font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.12em;margin-bottom:.4rem}
+.ic-role{font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:.3rem}
+.ic-val{font-size:1.5rem;font-weight:700;margin-bottom:.15rem}
+.ic-sub{font-size:.7rem;color:var(--muted)}
+.detail-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1.5rem}
+.dp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:.75rem}
+.dp-item{background:var(--panel);border-radius:8px;padding:.75rem}
+.dp-lbl{font-size:.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
+.dp-v{font-size:1.1rem;font-weight:700;color:var(--text)}
+.dp-d{font-size:.7rem;color:var(--muted);margin-top:.15rem}
+.report-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.75rem;cursor:pointer;transition:all .2s}
+.report-card:hover{border-color:rgba(29,158,117,.4);transform:translateY(-1px)}
+.rc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem}
+.rc-title{font-size:.85rem;font-weight:600;color:var(--text)}
+.rc-meta{font-size:.72rem;color:var(--muted);margin-bottom:.5rem}
+.prog-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;background:var(--emerald);width:0%;transition:width .1s linear}
+table{width:100%;border-collapse:collapse;font-size:.77rem}
+thead th{text-align:left;padding:.6rem .8rem;font-size:.61rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)}
+tbody tr{border-bottom:1px solid rgba(36,48,68,.6);transition:background .15s}
+tbody tr:hover{background:rgba(29,158,117,.03)}
+tbody td{padding:.65rem .8rem;color:var(--text);vertical-align:middle}
+.td-mono{font-family:monospace;font-size:.73rem;color:var(--muted)}
+.td-proc{font-weight:600;font-size:.77rem}
+.td-days{font-weight:700}
+.wait-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:3px;width:90px}
+.wait-fill{height:100%;border-radius:3px}
+.seg-tag{display:inline-block;padding:.1rem .45rem;border-radius:6px;font-size:.62rem;font-weight:600;margin-right:3px}
+.seg-critico{background:rgba(224,82,82,.15);color:var(--red)}
+.seg-alto{background:rgba(201,168,76,.15);color:var(--warn)}
+.seg-medio{background:rgba(55,138,221,.15);color:var(--blue)}
+.seg-bajo{background:rgba(29,158,117,.15);color:var(--green)}
+.spec-tag{display:inline-block;padding:.1rem .4rem;border-radius:6px;font-size:.62rem;font-weight:600}
+.sp-trauma{background:rgba(139,124,246,.15);color:var(--violet)}
+.sp-oftal{background:rgba(0,123,131,.15);color:var(--teal)}
+.sp-cirug{background:rgba(55,138,221,.15);color:var(--blue)}
+.sp-cardio{background:rgba(201,168,76,.15);color:var(--gold)}
+.sp-otro{background:rgba(122,139,160,.15);color:var(--muted)}
+.pabellon-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1rem}
+.pab-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:.9rem;text-align:center}
+.pab-name{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem}
+.pab-pct{font-size:1.6rem;font-weight:700;margin-bottom:.3rem}
+.pab-ring{width:60px;height:60px;border-radius:50%;margin:0 auto .5rem;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;border:4px solid}
+.pab-meta{font-size:.68rem;color:var(--muted)}
+.cap-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:.35rem 0}
+.cap-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.info-box{background:rgba(29,158,117,.05);border:1px solid rgba(29,158,117,.2);border-radius:8px;padding:.85rem 1rem;font-size:.78rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+.info-box strong{color:var(--text)}
+.observ-log{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.75rem}
+.ol-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem}
+.ol-ts{font-family:monospace;font-size:.7rem;color:var(--muted)}
+.ol-actor{font-size:.72rem;font-weight:600;padding:.1rem .4rem;border-radius:6px;background:rgba(29,158,117,.1);color:var(--emerald-lt)}
+.ol-action{font-size:.8rem;color:var(--text);margin:.2rem 0}
+.ol-detail{font-size:.72rem;color:var(--muted)}
+.resource-bar{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.res-btn{display:flex;align-items:center;gap:.5rem;padding:.55rem .9rem;border-radius:8px;border:1px solid var(--border);background:var(--panel);font-size:.78rem;color:var(--text);cursor:pointer;text-decoration:none;transition:all .2s}
+.res-btn:hover{border-color:var(--emerald);color:var(--emerald-lt)}
+footer{padding:1.25rem 2rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:.7rem;color:var(--muted)}
+footer a{color:var(--emerald-lt);text-decoration:none}
+@media(max-width:900px){.shell{grid-template-columns:1fr}aside{display:none}.kpi-grid{grid-template-columns:repeat(2,1fr)}.chart-row,.chart-row-3{grid-template-columns:1fr}.inst-grid{grid-template-columns:repeat(2,1fr)}.pabellon-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.kpi-grid{grid-template-columns:1fr}main{padding:1rem}.inst-grid,.pabellon-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+<header>
+  <div class="brand">
+    <div class="brand-mark">LE<br>EYE</div>
+    <div>
+      <div class="brand-name">Lista<span>Eye</span> · Gestión Avanzada de Listas de Espera</div>
+      <div class="brand-sub">GL Strategic × Minsal–FONASA · Programa Fonasa 2026 · Eje 2 · Observabilidad &amp; Trazabilidad</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div><span id="liveTs">LIVE</span></div>
+    <select id="servicioSel" onchange="changeServicio(this.value)">
+      <option value="metro">SS Metropolitano Central</option>
+      <option value="bio">SS del Biobío</option>
+      <option value="val">SS Valparaíso–San Antonio</option>
+      <option value="full">Red nacional — Consolidado</option>
+    </select>
+  </div>
+</header>
+
+<div class="shell">
+<aside>
+  <div class="client-badge">
+    <div class="cb-label">Servicio de Salud activo</div>
+    <div class="cb-name" id="servicioName">SS Metropolitano Central</div>
+    <div class="cb-detail" id="servicioDetail">342K personas en espera · 3 especialidades piloto</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Módulos</div>
+    <button class="nav-item active" onclick="showPanel('overview',this)">📊 Panel Ejecutivo</button>
+    <button class="nav-item" onclick="showPanel('depuracion',this)">🧹 Depuración de Lista</button>
+    <button class="nav-item" onclick="showPanel('segmentacion',this)">🎯 Segmentación</button>
+    <button class="nav-item" onclick="showPanel('capacidad',this)">🏥 Capacidad &amp; Pabellones</button>
+    <button class="nav-item" onclick="showPanel('instituciones',this)">🏛 Por Actor</button>
+    <button class="nav-item" onclick="showPanel('normativa',this)">⚖️ Normativa &amp; Plan</button>
+    <button class="nav-item" onclick="showPanel('observabilidad',this)">🔍 Observabilidad</button>
+    <button class="nav-item" onclick="showPanel('reportes',this)">📄 Reportes</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Simular escenario</div>
+    <button class="nav-item" onclick="simScenario('depura')">🧹 Depuración masiva</button>
+    <button class="nav-item" onclick="simScenario('critico')">🚨 Caso crítico +500d</button>
+    <button class="nav-item" onclick="simScenario('pabellon')">🏥 Pabellón ocioso</button>
+    <button class="nav-item" onclick="simScenario('mle')">🔄 Derivación MLE</button>
+    <button class="nav-item" onclick="simScenario('egreso')">✅ Egresos batch</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Capa técnica</div>
+    <div style="margin:.25rem 0;padding:.75rem;background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.2);border-radius:8px">
+      <div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Visor Lista Espera</div>
+      <div style="font-size:.65rem;color:var(--emerald-lt);margin-top:.3rem;font-family:monospace">GET /api/lista-eye.php</div>
+      <div style="font-size:.6rem;color:var(--muted);margin-top:.35rem">BID · Minsal · FONASA integrado</div>
+    </div>
+  </div>
+</aside>
+
+<main>
+
+<!-- OVERVIEW -->
+<div id="panel-overview" class="panel-wrap active">
+  <div class="page-title">Panel Ejecutivo — Listas de Espera No GES</div>
+  <div class="page-sub" id="overviewSub">Programa Fonasa 2026 · Eje 2: Gestión avanzada de listas de espera y capacidad · Piloto activo</div>
+
+  <div class="resource-bar">
+    <a href="#" class="res-btn" onclick="showPanel('depuracion',null);return false">🧹 <span>Depuración activa</span></a>
+    <a href="#" class="res-btn" onclick="showPanel('segmentacion',null);return false">🎯 <span>Segmentación</span></a>
+    <a href="#" class="res-btn" onclick="showPanel('capacidad',null);return false">🏥 <span>Pabellones</span></a>
+    <a href="#" class="res-btn" onclick="showPanel('reportes',null);return false">📊 <span>Informe DIPRES</span></a>
+  </div>
+
+  <div id="alertArea"></div>
+
+  <div class="kpi-grid">
+    <div class="kpi red"><div class="kpi-icon">🕐</div>
+      <div class="kpi-label">Stock Lista Espera (piloto)</div>
+      <div class="kpi-val red" id="kStock">342.800</div>
+      <div class="kpi-sub down" id="kStockSub">personas en espera activa</div></div>
+    <div class="kpi"><div class="kpi-icon">📅</div>
+      <div class="kpi-label">Mediana Espera Consultas</div>
+      <div class="kpi-val emerald" id="kMediana">264</div>
+      <div class="kpi-sub down" id="kMedianaSub">días · meta: &lt; 150 días</div></div>
+    <div class="kpi green"><div class="kpi-icon">✅</div>
+      <div class="kpi-label">Egresos Acumulados Piloto</div>
+      <div class="kpi-val green" id="kEgresos">0</div>
+      <div class="kpi-sub up" id="kEgresosSub">Período piloto activo</div></div>
+    <div class="kpi violet"><div class="kpi-icon">🔍</div>
+      <div class="kpi-label">Casos Fantasma Depurados</div>
+      <div class="kpi-val violet" id="kFantasma">0</div>
+      <div class="kpi-sub" id="kFantasmaSub">resueltos+duplicados+fallecidos</div></div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi gold"><div class="kpi-icon">🚨</div>
+      <div class="kpi-label">Críticos &gt; 500 días</div>
+      <div class="kpi-val gold" id="kCrit">28.400</div>
+      <div class="kpi-sub down">Prioridad máxima piloto</div></div>
+    <div class="kpi blue"><div class="kpi-icon">🏥</div>
+      <div class="kpi-label">Utilización Pabellones</div>
+      <div class="kpi-val blue" id="kPab">72%</div>
+      <div class="kpi-sub" id="kPabSub">meta: ≥ 85%</div></div>
+    <div class="kpi teal"><div class="kpi-icon">🔄</div>
+      <div class="kpi-label">Derivaciones MLE activas</div>
+      <div class="kpi-val teal" id="kMLE">0</div>
+      <div class="kpi-sub up" id="kMLESub">Privados costo-efectivos</div></div>
+    <div class="kpi"><div class="kpi-icon">📐</div>
+      <div class="kpi-label">Reducción Mediana Espera</div>
+      <div class="kpi-val emerald" id="kReduc">0%</div>
+      <div class="kpi-sub">Meta piloto: -30%</div></div>
+  </div>
+
+  <div class="chart-row">
+    <div class="card">
+      <div class="card-title">Evolución stock lista espera (personas, miles)<span class="badge">12 meses</span></div>
+      <div class="chart-wrap"><canvas id="cStock"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Por Especialidad piloto<span class="badge">distribución</span></div>
+      <div class="chart-wrap"><canvas id="cEspec"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Feed de eventos de gestión de lista<span class="badge ok" id="feedBadge">● live</span></div>
+    <div class="feed" id="feedMain"></div>
+  </div>
+</div>
+
+<!-- DEPURACION -->
+<div id="panel-depuracion" class="panel-wrap">
+  <div class="page-title">🧹 Depuración Activa de Lista</div>
+  <div class="page-sub">Identificación y cierre de casos resueltos, duplicados, fallecidos y no contactables · Reduce el "stock fantasma"</div>
+
+  <div class="info-box">
+    <strong>¿Por qué depurar?</strong> Estudios en Chile y otras jurisdicciones muestran que 15–25% del stock puede corresponder a casos ya resueltos, fallecidos o no contactables. La depuración activa genera "quick wins" visibles sin aumentar oferta. Cada caso eliminado mejora la mediana real y libera capacidad de gestión para el stock legítimo.
+  </div>
+
+  <div class="sim-bar">
+    <span class="sim-label">Simular:</span>
+    <button class="btn" onclick="simScenario('depura')">🧹 Depuración masiva</button>
+    <button class="btn btn-red" onclick="simScenario('critico')">🚨 Caso crítico +500d</button>
+    <button class="btn btn-green" onclick="simScenario('egreso')">✅ Egresos batch</button>
+    <button class="btn btn-gold" onclick="simScenario('random')">⚡ Evento aleatorio</button>
+  </div>
+
+  <div id="depuraAlerts"></div>
+
+  <div class="chart-row">
+    <div class="card">
+      <div class="card-title">Composición del stock a depurar<span class="badge warn">Estimación piloto</span></div>
+      <div class="chart-wrap"><canvas id="cDepura"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Motivos de baja<span class="badge">tipología</span></div>
+      <div class="chart-wrap"><canvas id="cMotivos"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Cola de casos para depuración — Especialidades piloto<span class="badge err" id="depCount">cargando…</span></div>
+    <table>
+      <thead><tr>
+        <th>ID Caso</th><th>Especialidad</th><th>Días espera</th><th>Motivo depuración</th>
+        <th>Último contacto</th><th>Establecimiento</th><th>Acción recomendada</th>
+      </tr></thead>
+      <tbody id="depuraTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SEGMENTACION -->
+<div id="panel-segmentacion" class="panel-wrap">
+  <div class="page-title">🎯 Segmentación Operacional</div>
+  <div class="page-sub">Ordenamiento por antigüedad · riesgo de deterioro funcional · impacto en capacidad productiva · Siempre dentro del marco clínico vigente</div>
+
+  <div class="info-box">
+    <strong>Principio rector:</strong> La segmentación <em>complementa, no reemplaza</em> el criterio clínico. Los segmentos ayudan a PRIORIZAR qué casos gestionar primero con los recursos disponibles. El criterio de urgencia clínica del médico siempre prevalece. Modelo validado con Minsal Subsecretaría de Redes Asistenciales.
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Mapa de segmentación — Universo piloto<span class="badge">4 segmentos operacionales</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-top:.25rem">
+      <div class="dp-item" style="border-left:3px solid var(--red)">
+        <div class="dp-lbl" style="color:var(--red)">🔴 Crítico</div>
+        <div class="dp-v" id="segCrit" style="color:var(--red)">28.400</div>
+        <div class="dp-d">Alta antigüedad + alto riesgo deterioro. Acción inmediata.</div>
+      </div>
+      <div class="dp-item" style="border-left:3px solid var(--warn)">
+        <div class="dp-lbl" style="color:var(--warn)">🟡 Alto</div>
+        <div class="dp-v" id="segAlto" style="color:var(--warn)">84.200</div>
+        <div class="dp-d">Media prioridad + muy larga espera. Gestión en 30 días.</div>
+      </div>
+      <div class="dp-item" style="border-left:3px solid var(--blue)">
+        <div class="dp-lbl" style="color:var(--blue)">🔵 Medio</div>
+        <div class="dp-v" id="segMedio" style="color:var(--blue)">142.800</div>
+        <div class="dp-d">Espera prolongada, sin deterioro inminente. Gestión planificada.</div>
+      </div>
+      <div class="dp-item" style="border-left:3px solid var(--green)">
+        <div class="dp-lbl" style="color:var(--green)">🟢 Seguimiento</div>
+        <div class="dp-v" id="segBajo" style="color:var(--green)">87.400</div>
+        <div class="dp-d">Casos de menor urgencia relativa. Monitor periódico.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Lista segmentada — Especialidades Traumatología · Oftalmología · Cirugía<span class="badge violet" id="segCount">cargando…</span></div>
+    <table>
+      <thead><tr>
+        <th>Folio</th><th>Especialidad</th><th>Segmento</th><th>Días espera</th>
+        <th>Antigüedad (percentil)</th><th>Riesgo deterioro</th><th>Impacto laboral</th><th>Acción sugerida</th>
+      </tr></thead>
+      <tbody id="segTbody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Variables de segmentación<span class="badge">Transparencia metodológica</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:.5rem">
+      <div class="dp-item"><div class="dp-lbl">Antigüedad en espera</div><div class="dp-v" style="font-size:.85rem">Fecha ingreso</div><div class="dp-d">Fuente: Registro Visor LE</div></div>
+      <div class="dp-item"><div class="dp-lbl">Riesgo deterioro funcional</div><div class="dp-v" style="font-size:.85rem">Clasif. clínica</div><div class="dp-d">Basado en clasificaciones Minsal vigentes</div></div>
+      <div class="dp-item"><div class="dp-lbl">Impacto capacidad productiva</div><div class="dp-v" style="font-size:.85rem">Edad + Dx</div><div class="dp-d">Casos que impiden trabajar o cuidar</div></div>
+      <div class="dp-item"><div class="dp-lbl">Especialidad y complejidad</div><div class="dp-v" style="font-size:.85rem">Código CIE-10</div><div class="dp-d">Traumatología, Oftalmología, Cirugía</div></div>
+      <div class="dp-item"><div class="dp-lbl">Establecimiento de origen</div><div class="dp-v" style="font-size:.85rem">Hospital/Centro</div><div class="dp-d">Capacidad disponible MAI/MLE</div></div>
+      <div class="dp-item"><div class="dp-lbl">Intentos de contacto</div><div class="dp-v" style="font-size:.85rem">N° contactos</div><div class="dp-d">Sin respuesta → depuración</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CAPACIDAD -->
+<div id="panel-capacidad" class="panel-wrap">
+  <div class="page-title">🏥 Gestión de Capacidad y Pabellones</div>
+  <div class="page-sub">Simulación de uso pabellones · Tiempos muertos · No-show · Derivación selectiva MAI/MLE · Jornadas extraordinarias</div>
+
+  <div id="capAlerts"></div>
+
+  <div class="sim-bar">
+    <span class="sim-label">Simular:</span>
+    <button class="btn" onclick="simScenario('pabellon')">🏥 Pabellón ocioso</button>
+    <button class="btn btn-green" onclick="simScenario('mle')">🔄 Derivación MLE</button>
+    <button class="btn" onclick="simScenario('noshow')">❌ No-show detectado</button>
+    <button class="btn btn-gold" onclick="simScenario('jornada')">⭐ Jornada extra</button>
+  </div>
+
+  <div class="pabellon-grid" id="pabGrid"></div>
+
+  <div class="chart-row">
+    <div class="card">
+      <div class="card-title">Utilización pabellones por especialidad (últimas 8 semanas)<span class="badge">% uso</span></div>
+      <div class="chart-wrap"><canvas id="cPab"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Distribución resoluciones MAI vs MLE<span class="badge blue">Mix público-privado</span></div>
+      <div class="chart-wrap"><canvas id="cMaiMle"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Simulación reducción stock — Escenarios de capacidad<span class="badge">Proyección 6 meses</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:.5rem">
+      <div class="dp-item">
+        <div class="dp-lbl">📌 Escenario base (sin cambios)</div>
+        <div class="dp-v" style="color:var(--red)">-8% stock</div>
+        <div class="dp-d">Solo inercia actual del sistema</div>
+        <div class="cap-bar"><div class="cap-fill" style="width:8%;background:var(--red)"></div></div>
+      </div>
+      <div class="dp-item">
+        <div class="dp-lbl">📈 Optimización pabellones +15%</div>
+        <div class="dp-v" style="color:var(--warn)">-19% stock</div>
+        <div class="dp-d">Reducción tiempos muertos + mejor mezcla</div>
+        <div class="cap-bar"><div class="cap-fill" style="width:19%;background:var(--warn)"></div></div>
+      </div>
+      <div class="dp-item">
+        <div class="dp-lbl">🚀 Piloto completo (depura+seg+cap)</div>
+        <div class="dp-v" style="color:var(--green)">-31% stock</div>
+        <div class="dp-d">Depuración + segmentación + MLE selectivo</div>
+        <div class="cap-bar"><div class="cap-fill" style="width:31%;background:var(--green)"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INSTITUCIONES -->
+<div id="panel-instituciones" class="panel-wrap">
+  <div class="page-title">🏛 Valor por Actor Institucional</div>
+  <div class="page-sub">Selecciona un actor para ver su rol, KPIs y valor que entrega Lista-Eye</div>
+  <div class="inst-grid" id="instGrid"></div>
+  <div id="instDetail"></div>
+</div>
+
+<!-- NORMATIVA -->
+<div id="panel-normativa" class="panel-wrap">
+  <div class="page-title">⚖️ Marco Normativo y Plan Nacional</div>
+  <div class="page-sub">Plan Nacional de Disminución de Tiempos de Espera 2022–2026 · Glosas DIPRES · GES · MLE · Estándares de medición</div>
+
+  <div id="normAlerts" style="margin-bottom:1rem"></div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Instrumentos clave del marco regulatorio<span class="badge ok">Monitoreados</span></div>
+    <table>
+      <thead><tr><th style="width:30%">Instrumento</th><th style="width:15%">Emisor</th><th style="width:12%">Relevancia</th><th style="width:13%">Estado</th><th style="width:30%">Implicación para el programa</th></tr></thead>
+      <tbody id="normTbody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Mediana de espera por especialidad — Evolución y meta<span class="badge">días</span></div>
+    <div class="chart-wrap" style="height:200px"><canvas id="cMedianaEsp"></canvas></div>
+    <div style="margin-top:.75rem;font-size:.75rem;color:var(--muted)">
+      ⭐ Meta Plan Nacional 2026: consultas especialidad &lt; 150 días · Cirugías &lt; 180 días · GES: dentro de garantía legal<br>
+      2021: 520 días → 2024: 264 días en consultas. La mediana en cirugías sigue más alta. Foco piloto: Traumatología y Oftalmología.
+    </div>
+  </div>
+</div>
+
+<!-- OBSERVABILIDAD -->
+<div id="panel-observabilidad" class="panel-wrap">
+  <div class="page-title">🔍 Capa de Observabilidad y Trazabilidad</div>
+  <div class="page-sub">Registro inmutable de datos, segmentaciones, decisiones de derivación y resultados · Auditable por Contraloría, DIPRES y Comisión Investigadora del Congreso</div>
+
+  <div class="info-box">
+    <strong>¿Por qué es crítica esta capa?</strong> Las listas de espera son un tema de alta sensibilidad política. La capa de observabilidad permite demostrar que cada decisión de priorización, derivación o cierre de caso tiene fundamento documentado y no es arbitraria. Responde a la Comisión Investigadora del Congreso (CEI 63/64) y a Contraloría en tiempo real.
+  </div>
+
+  <div style="display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+    <button class="btn btn-green" onclick="addObsLog()">⚡ Registrar evento</button>
+    <button class="btn">⬇ Exportar log CSV</button>
+    <button class="btn">📄 Informe Contraloría PDF</button>
+    <button class="btn">📊 Vista Comisión Congreso</button>
+  </div>
+
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-title">Registro de trazabilidad<span class="badge" id="obsCount">0 entradas</span></div>
+    <div id="obsLog" style="max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div class="card">
+      <div class="card-title">Fuentes de datos<span class="badge ok">Activas</span></div>
+      <div style="font-size:.78rem;display:flex;flex-direction:column;gap:6px;margin-top:.25rem">
+        <div class="feed-item"><div class="fi-dot ok">✓</div><div><div class="fi-name">Visor Listas de Espera No GES — Minsal/BID</div><div class="fi-meta"><span>Actualización: semanal</span><span>Registro por establecimiento</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot ok">✓</div><div><div class="fi-name">FONASA — Uso MAI/MLE por episodio</div><div class="fi-meta"><span>Mensual</span><span>Vinculado a folio lista espera</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot ok">✓</div><div><div class="fi-name">Hospitales piloto — Agenda pabellones</div><div class="fi-meta"><span>Tiempo real</span><span>Acceso API establecimiento</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot warn">!</div><div><div class="fi-name">COMPIN — Clasificaciones clínicas</div><div class="fi-meta"><span>Pendiente integración</span><span>En tramitación</span></div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Decisiones trazadas<span class="badge violet">Inmutable</span></div>
+      <div style="font-size:.78rem;display:flex;flex-direction:column;gap:6px;margin-top:.25rem">
+        <div class="feed-item new"><div class="fi-dot ok">✓</div><div><div class="fi-name">Depuración batch — 1.240 casos cerrados</div><div class="fi-meta"><span>08-Abr-2026 · Hospital El Pino</span><span>Criterio: fallecido+no contactable</span></div></div></div>
+        <div class="feed-item new"><div class="fi-dot ok">✓</div><div><div class="fi-name">Segmentación v2.1 aplicada — 342.800 casos</div><div class="fi-meta"><span>07-Abr-2026</span><span>Validado: Dr. Torres (Sub. Redes)</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot blue">→</div><div><div class="fi-name">Derivación MLE Traumatología — 340 casos</div><div class="fi-meta"><span>05-Abr-2026</span><span>Clínica Las Condes · costo-efectivo</span></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORTES -->
+<div id="panel-reportes" class="panel-wrap">
+  <div class="page-title">📄 Reportes Institucionales</div>
+  <div class="page-sub">Informes certificados para Comité Tiempos de Espera · DIPRES · Contraloría · Minsal · Comisión Congreso</div>
+  <div id="reportList"></div>
+</div>
+
+</main>
+</div>
+
+<footer>
+  <span>© 2026 <a href="https://glstrategic.cl" target="_blank">GL Strategic</a> · Lista-Eye v1.0 — Programa Fonasa 2026 · Eje 2: Gestión Avanzada de Listas de Espera</span>
+  <span style="font-family:monospace;font-size:.62rem">Powered by NovisEye Framework · fintech.ingenieriadegestion.cl</span>
+  <span>Confidencial · Comité Tiempos de Espera Minsal–FONASA · Solo uso interno</span>
+</footer>
+</div>
+
+<script>
+var SERVICIOS={
+  metro:{name:"SS Metropolitano Central",detail:"342K personas · 3 especialidades piloto",stock:342800,mediana:264,egresos:0,fantasma:0,crit:28400,pab:72,mle:0,reduc:0,
+    stockMes:[398,392,387,381,376,371,368,362,358,354,348,342],
+    espec:["Traumatología","Oftalmología","Cirugía Gral.","Cardiología","Otros"],
+    especVals:[112400,78200,64800,38700,48700]},
+  bio:{name:"SS del Biobío",detail:"186K personas · 3 especialidades piloto",stock:186400,mediana:298,egresos:0,fantasma:0,crit:16200,pab:68,mle:0,reduc:0,
+    stockMes:[212,209,206,204,201,198,196,193,191,189,187,186],
+    espec:["Traumatología","Oftalmología","Cirugía Gral.","Cardiología","Otros"],
+    especVals:[61200,42800,35400,21100,25900]},
+  val:{name:"SS Valparaíso–San Antonio",detail:"163K personas · 3 especialidades piloto",stock:163200,mediana:281,egresos:0,fantasma:0,crit:13800,pab:70,mle:0,reduc:0,
+    stockMes:[184,181,179,177,174,172,170,168,166,165,164,163],
+    espec:["Traumatología","Oftalmología","Cirugía Gral.","Cardiología","Otros"],
+    especVals:[53600,37400,30800,18400,23000]},
+  full:{name:"Red nacional — Consolidado",detail:"2.64M personas · Todas las especialidades",stock:2640000,mediana:264,egresos:0,fantasma:0,crit:218000,pab:70,mle:0,reduc:0,
+    stockMes:[2710,2700,2690,2680,2675,2668,2660,2655,2648,2645,2642,2640],
+    espec:["Traumatología","Oftalmología","Cirugía Gral.","Cardiología","Otros"],
+    especVals:[868000,601000,498000,297000,376000]}
+};
+
+var DEPURA_DATA=[
+  {id:"LE-2024-00841",espec:"Traumatología",especTag:"sp-trauma",dias:687,motivo:"Fallecido — registro cruzado RCivil",contacto:"Sin contacto 24 meses",estab:"H. San Juan de Dios",accion:"Cierre automático"},
+  {id:"LE-2023-12394",espec:"Oftalmología",especTag:"sp-oftal",dias:521,motivo:"Resuelto en privado — autodeclara",contacto:"Autodeclaración 03-Abr",estab:"H. Salvador",accion:"Validar y cerrar"},
+  {id:"LE-2024-03871",espec:"Cirugía Gral.",especTag:"sp-cirug",dias:448,motivo:"Duplicado — mismo folio 2 SS",contacto:"Folio LE-2024-03872",estab:"H. El Pino",accion:"Merge y cerrar"},
+  {id:"LE-2023-08821",espec:"Traumatología",especTag:"sp-trauma",dias:612,motivo:"No contactable — 4 intentos fallidos",contacto:"Sin respuesta 18 meses",estab:"H. Félix Bulnes",accion:"Cierre + carta"},
+  {id:"LE-2024-07712",espec:"Oftalmología",especTag:"sp-oftal",dias:389,motivo:"Resuelto MAI — cruce datos FONASA",contacto:"Prestación: 12-Feb-2026",estab:"H. Del Salvador",accion:"Cierre automático"},
+  {id:"LE-2023-19204",espec:"Cirugía Gral.",especTag:"sp-cirug",dias:534,motivo:"Trasladado a otro Servicio de Salud",contacto:"Ingreso SS Oriente: 22-Mar",estab:"H. El Pino",accion:"Traspaso registro"},
+];
+
+var SEG_DATA=[
+  {folio:"LE-2022-04821",espec:"Traumatología",especTag:"sp-trauma",seg:"critico",segLabel:"🔴 Crítico",dias:842,pctil:"P99",riesgo:"Alto — Funcionalidad severamente limitada",laboral:"Sí — Trabajador activo 54a",accion:"Pabellón urgente / MLE"},
+  {folio:"LE-2022-11432",espec:"Oftalmología",especTag:"sp-oftal",seg:"critico",segLabel:"🔴 Crítico",dias:718,pctil:"P98",riesgo:"Alto — Pérdida progresiva visión",laboral:"No — Adulto mayor 71a",accion:"Pabellón urgente"},
+  {folio:"LE-2023-02887",espec:"Traumatología",especTag:"sp-trauma",seg:"alto",segLabel:"🟡 Alto",dias:487,pctil:"P91",riesgo:"Medio-alto — Artrosis cadera",laboral:"Sí — Cuidador familiar 48a",accion:"Agendar 30 días"},
+  {folio:"LE-2023-08120",espec:"Cirugía Gral.",especTag:"sp-cirug",seg:"alto",segLabel:"🟡 Alto",dias:412,pctil:"P88",riesgo:"Medio — Hernia recurrente",laboral:"Sí — Trabajador construcción",accion:"Agendar 30 días"},
+  {folio:"LE-2023-14882",espec:"Oftalmología",especTag:"sp-oftal",seg:"medio",segLabel:"🔵 Medio",dias:287,pctil:"P72",riesgo:"Bajo-medio — Catarata estable",laboral:"No — Jubilada 68a",accion:"Planificar 90 días"},
+  {folio:"LE-2024-01204",espec:"Cirugía Gral.",especTag:"sp-cirug",seg:"bajo",segLabel:"🟢 Seguimiento",dias:148,pctil:"P45",riesgo:"Bajo — Colecistectomía electiva",laboral:"No impacto laboral",accion:"Monitor próx. período"},
+];
+
+var INSTITUCIONES=[
+  {sigla:"MINSAL",role:"Subsecretaría Redes Asistenciales — Plan Nacional",pain:"Compromiso público de reducir lista espera; necesita evidencia de impacto por Servicio y especialidad",delivers:"Dashboard por SS · Mediana por especialidad · Egresos verificados · Insumo para prensa",val:"-31%",vc:"green",sub:"reducción stock proyectada en piloto (escenario completo)",detail:[{l:"Meta Plan Nacional",v:"<150 días",d:"consultas especialidad 2026"},{l:"Egresos 2025 red",v:"2.7M",d:"personas egresadas lista No GES"},{l:"Stock residual",v:"2.64M",d:"personas en espera activa"},{l:"Servicios pilotos",v:"1 SS",d:"escalable condicionado resultados"}]},
+  {sigla:"FONASA",role:"Financiamiento MAI/MLE y compra de servicios",pain:"Glosas DIPRES vinculan fondos a reducción tiempos; necesita eficiencia en combinación público-privada",delivers:"Mix MAI/MLE optimizado · Derivaciones costo-efectivas · Reportes de gasto por episodio",val:"MM$ 73B",vc:"gold",sub:"inversión anual Plan Nacional respaldada por datos",detail:[{l:"Glosa presupuesto 2026",v:"MM$ 73.000",d:"refuerzo listas de espera"},{l:"Resoluciones MAI",v:"~60%",d:"volumen actual del piloto"},{l:"Resoluciones MLE",v:"~40%",d:"objetivo optimización mix"},{l:"Costo-efectividad MLE",v:"Medido",d:"por especialidad y prestador"}]},
+  {sigla:"SS/Hosp.",role:"Servicios de Salud y Hospitales — Operadores",pain:"Sin visibilidad integrada de lista+pabellón; gestión reactiva; reuniones sin datos accionables",delivers:"Dashboard por hospital · Cola segmentada · Alertas de pabellón ocioso · Actas de reunión",val:"+15%",vc:"blue",sub:"mejora utilización pabellones en piloto",detail:[{l:"Tiempos muertos pabellón",v:"-40%",d:"vs línea base"},{l:"No-show gestionado",v:"Alertas",d:"4h antes de cirugía"},{l:"Egresos/semana",v:"+22%",d:"vs promedio prepiloto"},{l:"Reunión comité",v:"Mensual",d:"con datos accionables"}]},
+  {sigla:"DIPRES",role:"Control fiscal — Vinculación gasto-resultado",pain:"¿Los MM$ 73B anuales generan impacto real? ¿Cuánto baja la lista por cada MM$ invertido?",delivers:"ROI por SS · Reducción stock vs gasto · Insumo para decisión escalamiento",val:"340%",vc:"violet",sub:"ROI estimado piloto (costo operación vs impacto)",detail:[{l:"Costo operación piloto",v:"MM$ 1.800",d:"equipo técnico + TI"},{l:"Egresos adicionales",v:"+22%",d:"sobre línea base"},{l:"Ahorro potencial MLE",v:"12% vs MAI",d:"en especialidades piloto"},{l:"Decisión escalamiento",v:"Mes 6",d:"condicional a resultados"}]},
+  {sigla:"BID",role:"Cooperante técnico — Visor de Listas de Espera",pain:"Sistema de información existe pero subutilizado; necesita articularse con gestión operativa",delivers:"Integración Visor LE → Lista-Eye · API en tiempo real · Tableros por establecimiento",val:"100%",vc:"teal",sub:"datos Visor LE integrados en tiempo real",detail:[{l:"Cobertura Visor LE",v:"Red nacional",d:"por establecimiento y especialidad"},{l:"Frecuencia datos",v:"Semanal",d:"meta: tiempo real"},{l:"Variables disponibles",v:"12 campos",d:"fecha, esp., estab., prioridad…"},{l:"Gap actual",v:"Sin cruce",d:"FONASA MAI/MLE no integrado"}]},
+  {sigla:"CONTRALORÍA",role:"Auditor de legalidad de priorización y derivaciones",pain:"¿Hay criterios arbitrarios en quién se atiende primero? ¿Las derivaciones MLE están justificadas?",delivers:"Audit trail de segmentación · Fundamento de cada derivación · Defensa CEI Congreso",val:"100%",vc:"teal",sub:"decisiones de segmentación y derivación trazadas",detail:[{l:"Log segmentación",v:"Inmutable",d:"cada priorización registrada"},{l:"Criterios MLE",v:"Documentados",d:"costo-efectividad por caso"},{l:"Respuesta CEI",v:"72 hrs",d:"Comisión Investigadora"},{l:"Retención log",v:"5 años",d:"mínimo exigible"}]},
+];
+
+var NORM_DATA=[
+  {inst:"Res. Ex. N°271 — Plan Nacional Tiempos de Espera 2022–2026",emisor:"Minsal",rel:"Crítico",estado:"ok",implicacion:"Ejes de acción, metas por especialidad y Servicio; marco de rendición de cuentas del piloto"},
+  {inst:"Glosa presupuestaria 2026 — MM$ 73.000 listas espera",emisor:"DIPRES",rel:"Crítico",estado:"ok",implicacion:"Fondos condicionados a reducción mediana espera; reportes trimestrales obligatorios"},
+  {inst:"Ley N°19.966 — Régimen GES (AUGE)",emisor:"Congreso",rel:"Alto",estado:"ok",implicacion:"Garantías explícitas en tiempo de espera GES; lista No GES en ámbito complementario"},
+  {inst:"Circular FONASA — Modalidades MAI y MLE",emisor:"FONASA",rel:"Alto",estado:"ok",implicacion:"Marco de derivación público-privada; precios de referencia; criterios de elegibilidad"},
+  {inst:"Informe CEI 63/64 — Comisión Investigadora Congreso",emisor:"Congreso",rel:"Crítico",estado:"warn",implicacion:"Fiscalización política activa; observabilidad del programa es defensa ante interpelaciones"},
+  {inst:"Norma Técnica — Visor Listas de Espera No GES (BID)",emisor:"Minsal/BID",rel:"Medio",estado:"ok",implicacion:"Fuente oficial de datos; variables, definiciones y criterios de medición del stock"},
+  {inst:"Ley N°21.365 — Protección datos de salud",emisor:"Congreso",rel:"Alto",estado:"ok",implicacion:"Seudonimización de pacientes; control de acceso a datos de lista de espera"},
+  {inst:"Circular Contraloría N°72 (2023) — Decisiones algorítmicas",emisor:"Contraloría",rel:"Alto",estado:"ok",implicacion:"Fundamento auditable de segmentación; trazabilidad de derivaciones MLE obligatoria"},
+];
+
+var EVENTS_FEED=[
+  {type:"ok",icon:"✓",name:"Egresos batch procesados — Traumatología: 87 casos cerrados",cat:"Egresos",dias_lib:87*264,detalle:"Mediana mejorada: -4 días piloto"},
+  {type:"ok",icon:"✓",name:"Depuración: 124 casos fantasma eliminados — Oftalmología",cat:"Depuración",dias_lib:0,detalle:"72 fallecidos + 52 no contactables"},
+  {type:"ok",icon:"✓",name:"Derivación MLE: 48 catarátas → Clínica Vistamed",cat:"MLE",dias_lib:0,detalle:"Ahorro espera estimado: 6 meses/caso"},
+  {type:"warn",icon:"!",name:"Pabellón ocioso detectado: Hosp. San Juan de Dios — Lunes 08:00",cat:"Pabellones",dias_lib:0,detalle:"3 hrs sin uso · Lista de espera Crítica disponible"},
+  {type:"ok",icon:"✓",name:"Segmentación actualizada — 342.800 casos recalculados",cat:"Segmentación",dias_lib:0,detalle:"v2.1 aplicada · Validada Subsecretaría Redes"},
+  {type:"ok",icon:"✓",name:"No-show gestionado: 7 slots recuperados — Cirugía Gral.",cat:"Pabellones",dias_lib:0,detalle:"Re-asignados a segmento Crítico en 4 hrs"},
+];
+
+var REPORTS=[
+  {title:"Informe DIPRES — Avance Plan Listas de Espera",sub:"Egresos verificados · Mediana por especialidad · ROI piloto",period:"Mensual — 30-Abr-2026",pdf:"le_informe_dipres.pdf",icon:"💰",badge:"DIPRES"},
+  {title:"Informe Comité Tiempos de Espera — Sesión mensual",sub:"Stock por segmento · Utilización pabellones · Decisiones de derivación",period:"Mensual",pdf:"le_informe_comite.pdf",icon:"🏛",badge:"Gobernanza"},
+  {title:"Reporte Minsal — Tiempos de Espera No GES",sub:"Mediana por SS y especialidad · Comparación Plan Nacional · Egresos",period:"Trimestral",pdf:"le_informe_minsal.pdf",icon:"⚖️",badge:"Minsal"},
+  {title:"Audit Trail — Decisiones segmentación y derivación",sub:"Log inmutable · Fundamento Contraloría y CEI Congreso",period:"Continuo · A la fecha",pdf:"le_audit_trail.pdf",icon:"🔍",badge:"Auditoría"},
+  {title:"Reporte Pabellones — Utilización y tiempos muertos",sub:"Uso pabellón por hospital · No-show · Jornadas extraordinarias",period:"Semanal",pdf:"le_pabellones.pdf",icon:"🏥",badge:"Operaciones"},
+  {title:"Nota Técnica — Metodología Segmentación v2.1",sub:"Variables, umbrales, validación clínica, libre de sesgo",period:"Versión marzo 2026",pdf:"le_metodologia.pdf",icon:"📐",badge:"Técnico"},
+];
+
+var PABELLONES=[
+  {nombre:"Traumatología",hosp:"H. San Juan de Dios",pct:78,meta:85,cls:"var(--blue)"},
+  {nombre:"Oftalmología",hosp:"H. El Salvador",pct:65,meta:85,cls:"var(--warn)"},
+  {nombre:"Cirugía Gral.",hosp:"H. El Pino",pct:81,meta:85,cls:"var(--emerald)"},
+  {nombre:"Cardiología",hosp:"H. Barros Luco",pct:58,meta:85,cls:"var(--red)"},
+];
+
+var SCENARIOS={
+  depura:{cls:"ab-ok",msg:"🧹 Depuración masiva: 1.240 casos eliminados del piloto SS Metro Central — 487 fallecidos + 412 no contactables + 341 resueltos. Stock ajustado: -0,36%. Trazabilidad completa en log."},
+  critico:{cls:"ab-err",msg:"🚨 Caso crítico detectado: Folio LE-2022-00394 · Traumatología · 961 días en espera · Riesgo pérdida funcionalidad irreversible. Segmento Crítico P99. Pabellón disponible: H. San Juan de Dios — 15-Abr. Coordinación urgente."},
+  pabellon:{cls:"ab-warn",msg:"🏥 Pabellón ocioso: H. El Salvador — Oftalmología — Martes 13:00–16:00 (3 hrs vacías). 8 pacientes segmento Crítico disponibles para reasignación. Contacto jefe UPC iniciado."},
+  mle:{cls:"ab-blue",msg:"🔄 Derivación MLE aprobada: 340 casos Traumatología → Clínica Las Condes (precio paquete negociado: $780k/caso vs $920k MAI). Reducción espera estimada: 5–6 meses. Trazabilidad registrada."},
+  egreso:{cls:"ab-ok",msg:"✅ Egresos batch: 847 casos cerrados en piloto SS Metro Central — 612 cirugías completadas + 235 consultas resueltas. Mediana espera piloto: -18 días (-6,8%). Reporte DIPRES actualizado."},
+  noshow:{cls:"ab-warn",msg:"❌ No-show detectado: 7 pacientes no se presentaron a pabellón Cirugía Gral. — H. El Pino. Slots reasignados a segmento Crítico en <4 hrs. Ahorro: 7 cirugías no perdidas."},
+  jornada:{cls:"ab-ok",msg:"⭐ Jornada extraordinaria aprobada: H. Félix Bulnes — Sábado 22-Abr · Traumatología · 24 cirugías adicionales. Segmento Crítico P98–P99 priorizado. Presupuesto glosa DIPRES: disponible."},
+  random:{cls:""}
+};
+
+var currentServicio="metro",totalEgresos=0,totalFantasma=0,totalMLE=0,obsEntries=[];
+var chartStock=null,chartEspec=null,chartDepura=null,chartMotivos=null,chartPab=null,chartMaiMle=null,chartMediana=null;
+
+function updateKPIs(){
+  var s=SERVICIOS[currentServicio];
+  var stock=s.stock-totalFantasma-totalEgresos;
+  var pct=totalEgresos+totalFantasma>0?Math.round((totalEgresos+totalFantasma)/s.stock*1000)/10:0;
+  document.getElementById("kStock").textContent=Math.max(0,stock).toLocaleString("es-CL");
+  document.getElementById("kMediana").textContent=Math.max(100,s.mediana-Math.floor(totalEgresos/200))+" días";
+  document.getElementById("kMedianaSub").textContent="días · meta: < 150 días";
+  document.getElementById("kEgresos").textContent=totalEgresos.toLocaleString("es-CL");
+  document.getElementById("kEgresosSub").textContent=(totalMLE>0?totalMLE+" por MLE · ":"")+"período piloto activo";
+  document.getElementById("kFantasma").textContent=totalFantasma.toLocaleString("es-CL");
+  document.getElementById("kCrit").textContent=Math.max(0,s.crit-Math.floor(totalEgresos/20)).toLocaleString("es-CL");
+  document.getElementById("kPab").textContent=Math.min(95,s.pab+Math.floor(totalEgresos/120))+"%";
+  document.getElementById("kMLE").textContent=totalMLE.toLocaleString("es-CL");
+  document.getElementById("kMLESub").textContent=totalMLE>0?"derivaciones costo-efectivas activas":"Sin derivaciones activas";
+  document.getElementById("kReduc").textContent=pct.toFixed(1).replace(".",",")+"%";
+  document.getElementById("servicioName").textContent=s.name;
+  document.getElementById("servicioDetail").textContent=s.detail;
+  document.getElementById("overviewSub").textContent="Programa Fonasa 2026 · Piloto: "+s.name+" · Período activo";
+}
+
+function buildCharts(){
+  var s=SERVICIOS[currentServicio];
+  if(chartStock)chartStock.destroy();
+  if(chartEspec)chartEspec.destroy();
+  var lbls=["May 25","Jun 25","Jul 25","Ago 25","Sep 25","Oct 25","Nov 25","Dic 25","Ene 26","Feb 26","Mar 26","Abr 26"];
+  chartStock=new Chart(document.getElementById("cStock"),{
+    type:"line",
+    data:{labels:lbls,datasets:[
+      {label:"Stock (miles)",data:s.stockMes,borderColor:"#E05252",backgroundColor:"rgba(224,82,82,0.07)",fill:true,tension:.35,pointRadius:3,borderWidth:2},
+      {label:"Meta",data:s.stockMes.map(function(){return Math.round(s.stockMes[0]*0.70)}),borderColor:"rgba(29,158,117,0.4)",borderDash:[5,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}},tooltip:{callbacks:{label:function(x){return" "+x.parsed.y.toLocaleString("es-CL")+"K personas"}}}},scales:{x:{grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#7A8BA0",font:{size:9},autoSkip:false,maxRotation:45}},y:{grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"#7A8BA0",callback:function(v){return v+"K"},font:{size:9}}}}}
+  });
+  chartEspec=new Chart(document.getElementById("cEspec"),{
+    type:"doughnut",
+    data:{labels:s.espec,datasets:[{data:s.especVals,backgroundColor:["#8B7CF6","#007B83","#378ADD","#C9A84C","#4A5568"],borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom",labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}},tooltip:{callbacks:{label:function(x){return" "+x.parsed.toLocaleString("es-CL")+" personas"}}}}}
+  });
+}
+
+function buildDepuraCharts(){
+  if(chartDepura)chartDepura.destroy();
+  if(chartMotivos)chartMotivos.destroy();
+  chartDepura=new Chart(document.getElementById("cDepura"),{
+    type:"bar",
+    data:{labels:["Stock activo real","Posibles fantasmas","En verificación"],
+      datasets:[{data:[318400,18200,6200],backgroundColor:["rgba(55,138,221,.4)","rgba(224,82,82,.4)","rgba(201,168,76,.4)"],borderColor:["#378ADD","#E05252","#C9A84C"],borderWidth:2,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#7A8BA0",font:{size:10}}},y:{ticks:{color:"#7A8BA0",callback:function(v){return v>=1000?Math.round(v/1000)+"K":v}}}}}
+  });
+  chartMotivos=new Chart(document.getElementById("cMotivos"),{
+    type:"pie",
+    data:{labels:["Fallecidos","No contactables","Resueltos en privado","Duplicados","Trasladados"],
+      datasets:[{data:[8200,5800,9400,2100,700],backgroundColor:["#4A1942","#E05252","#1D9E75","#378ADD","#C9A84C"],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}}}}
+  });
+}
+
+function buildCapCharts(){
+  if(chartPab)chartPab.destroy();
+  if(chartMaiMle)chartMaiMle.destroy();
+  var sem=["Sem 1","Sem 2","Sem 3","Sem 4","Sem 5","Sem 6","Sem 7","Sem 8"];
+  chartPab=new Chart(document.getElementById("cPab"),{
+    type:"line",
+    data:{labels:sem,datasets:[
+      {label:"Traumatología",data:[74,76,72,78,77,80,79,81],borderColor:"#8B7CF6",tension:.3,pointRadius:3,borderWidth:2,fill:false},
+      {label:"Oftalmología",data:[62,65,60,63,68,65,67,65],borderColor:"#007B83",tension:.3,pointRadius:3,borderWidth:2,fill:false},
+      {label:"Cirugía Gral.",data:[78,80,79,82,81,83,82,84],borderColor:"#378ADD",tension:.3,pointRadius:3,borderWidth:2,fill:false},
+      {label:"Meta (85%)",data:[85,85,85,85,85,85,85,85],borderColor:"rgba(29,158,117,.4)",borderDash:[5,4],fill:false,pointRadius:0,borderWidth:1.5,tension:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}}},scales:{x:{ticks:{color:"#7A8BA0",font:{size:9}}},y:{min:50,max:100,ticks:{color:"#7A8BA0",callback:function(v){return v+"%"},font:{size:9}}}}}
+  });
+  chartMaiMle=new Chart(document.getElementById("cMaiMle"),{
+    type:"doughnut",
+    data:{labels:["MAI (público)","MLE (privado)","Jornada ext."],
+      datasets:[{data:[62,31,7],backgroundColor:["#1D9E75","#378ADD","#C9A84C"],borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"60%",plugins:{legend:{position:"bottom",labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}},tooltip:{callbacks:{label:function(x){return" "+x.parsed+"%"}}}}}
+  });
+}
+
+function buildMedianaChart(){
+  if(chartMediana)chartMediana.destroy();
+  chartMediana=new Chart(document.getElementById("cMedianaEsp"),{
+    type:"bar",
+    data:{
+      labels:["Traumatología","Oftalmología","Cirugía Gral.","Cardiología","Todas esp."],
+      datasets:[
+        {label:"2021 (días)",data:[520,480,380,290,520],backgroundColor:"rgba(224,82,82,.3)",borderColor:"#E05252",borderWidth:2,borderRadius:3},
+        {label:"2024 (días)",data:[310,280,198,164,264],backgroundColor:"rgba(55,138,221,.3)",borderColor:"#378ADD",borderWidth:2,borderRadius:3},
+        {label:"Meta 2026 (días)",data:[150,150,180,120,150],backgroundColor:"rgba(29,158,117,.3)",borderColor:"#1D9E75",borderWidth:2,borderRadius:3}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}},tooltip:{callbacks:{label:function(x){return" "+x.parsed.y+" días"}}}},scales:{x:{ticks:{color:"#7A8BA0",font:{size:9}}},y:{ticks:{color:"#7A8BA0",callback:function(v){return v+" d"},font:{size:9}}}}}
+  });
+}
+
+function buildPabGrid(){
+  var g=document.getElementById("pabGrid");g.innerHTML="";
+  PABELLONES.forEach(function(p){
+    var ok=p.pct>=p.meta,warn=p.pct>=70&&p.pct<p.meta;
+    var col=ok?"var(--green)":warn?"var(--warn)":"var(--red)";
+    var d=document.createElement("div");d.className="pab-card";
+    d.innerHTML='<div class="pab-name">'+p.nombre+'</div>'+
+      '<div class="pab-ring" style="border-color:'+col+';color:'+col+'">'+p.pct+'%</div>'+
+      '<div style="font-size:.7rem;font-weight:700;color:'+col+'">'+p.pct+'% utilización</div>'+
+      '<div class="cap-bar"><div class="cap-fill" style="width:'+p.pct+'%;background:'+col+'"></div></div>'+
+      '<div class="pab-meta">Meta: '+p.meta+'% · '+p.hosp+'</div>';
+    g.appendChild(d);
+  });
+}
+
+function buildFeed(){
+  var el=document.getElementById("feedMain");el.innerHTML="";
+  EVENTS_FEED.slice(0,5).forEach(function(ev){
+    var mins=Math.floor(Math.random()*20)+1;
+    var d=document.createElement("div");d.className="feed-item";
+    d.innerHTML='<div class="fi-dot '+(ev.type==="ok"?"ok":"warn")+'">'+ ev.icon+'</div>'+
+      '<div style="flex:1"><div class="fi-name">'+ev.name+'</div>'+
+      '<div class="fi-meta"><span>'+ev.cat+'</span><span>'+ev.detalle+'</span><span>hace '+mins+' min</span></div></div>'+
+      '<span class="status-pill '+(ev.type==="ok"?"sp-ok":"sp-warn")+'">'+(ev.type==="ok"?"Completado":"Acción requerida")+'</span>';
+    el.appendChild(d);
+  });
+}
+
+function buildDepuraTable(){
+  var tb=document.getElementById("depuraTbody");tb.innerHTML="";
+  DEPURA_DATA.forEach(function(r){
+    var tr=document.createElement("tr");
+    tr.innerHTML='<td class="td-mono">'+r.id+'</td>'+
+      '<td><span class="spec-tag '+r.especTag+'">'+r.espec+'</span></td>'+
+      '<td class="td-days" style="color:var(--red)">'+r.dias+' d</td>'+
+      '<td style="font-size:.75rem;color:var(--muted)">'+r.motivo+'</td>'+
+      '<td class="td-mono">'+r.contacto+'</td>'+
+      '<td style="font-size:.75rem">'+r.estab+'</td>'+
+      '<td><span class="status-pill sp-warn">'+r.accion+'</span></td>';
+    tb.appendChild(tr);
+  });
+  document.getElementById("depCount").textContent=DEPURA_DATA.length+" casos identificados";
+}
+
+function buildSegTable(){
+  var tb=document.getElementById("segTbody");tb.innerHTML="";
+  SEG_DATA.forEach(function(r){
+    var sClass=r.seg==="critico"?"seg-critico":r.seg==="alto"?"seg-alto":r.seg==="medio"?"seg-medio":"seg-bajo";
+    var diasColor=r.dias>=600?"var(--red)":r.dias>=400?"var(--warn)":r.dias>=200?"var(--blue)":"var(--green)";
+    var fillColor=r.dias>=600?"#E05252":r.dias>=400?"#C9A84C":r.dias>=200?"#378ADD":"#1D9E75";
+    var tr=document.createElement("tr");
+    tr.innerHTML='<td class="td-mono">'+r.folio+'</td>'+
+      '<td><span class="spec-tag '+r.especTag+'">'+r.espec+'</span></td>'+
+      '<td><span class="seg-tag '+sClass+'">'+r.segLabel+'</span></td>'+
+      '<td><div style="font-weight:700;color:'+diasColor+'">'+r.dias+' d</div><div class="wait-bar"><div class="wait-fill" style="width:'+Math.min(100,r.dias/10)+'%;background:'+fillColor+'"></div></div></td>'+
+      '<td><span class="status-pill sp-violet" style="background:rgba(139,124,246,.1);color:var(--violet)">'+r.pctil+'</span></td>'+
+      '<td style="font-size:.74rem;color:var(--muted)">'+r.riesgo+'</td>'+
+      '<td style="font-size:.74rem;color:var(--muted)">'+r.laboral+'</td>'+
+      '<td><span class="status-pill '+(r.seg==="critico"?"sp-err":r.seg==="alto"?"sp-warn":r.seg==="medio"?"sp-blue":"sp-ok")+'">'+r.accion+'</span></td>';
+    tb.appendChild(tr);
+  });
+  document.getElementById("segCount").textContent=SEG_DATA.length+" registros muestra";
+}
+
+function buildNorma(){
+  var tb=document.getElementById("normTbody");tb.innerHTML="";
+  NORM_DATA.forEach(function(r){
+    var stClass=r.estado==="ok"?"sp-ok":"sp-warn";
+    var stLabel=r.estado==="ok"?"✓ OK":"⚠ Revisar";
+    var tr=document.createElement("tr");
+    tr.innerHTML='<td style="font-size:.78rem;font-weight:600;color:var(--text)">'+r.inst+'</td>'+
+      '<td><span style="display:inline-block;padding:.1rem .4rem;border-radius:6px;font-size:.62rem;font-weight:600;background:rgba(29,158,117,.1);color:var(--emerald-lt)">'+r.emisor+'</span></td>'+
+      '<td style="font-size:.75rem;color:var(--muted)">'+r.rel+'</td>'+
+      '<td><span class="status-pill '+stClass+'">'+stLabel+'</span></td>'+
+      '<td style="font-size:.74rem;color:var(--muted)">'+r.implicacion+'</td>';
+    tb.appendChild(tr);
+  });
+}
+
+function buildInstituciones(){
+  var g=document.getElementById("instGrid");g.innerHTML="";
+  INSTITUCIONES.forEach(function(inst,i){
+    var d=document.createElement("div");d.className="inst-card";
+    d.innerHTML='<div class="ic-sigla">'+inst.sigla+'</div><div class="ic-role">'+inst.role+'</div><div class="ic-val '+inst.vc+'">'+inst.val+'</div><div class="ic-sub">'+inst.sub+'</div>';
+    d.onclick=function(){showInst(i)};
+    g.appendChild(d);
+  });
+}
+
+function showInst(i){
+  document.querySelectorAll(".inst-card").forEach(function(c,j){c.classList.toggle("sel",j===i)});
+  var inst=INSTITUCIONES[i];
+  var dp=document.getElementById("instDetail");
+  var h='<div class="detail-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">'+
+    '<div><div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">'+inst.sigla+' — Rol en Eje 2 Listas de Espera</div>'+
+    '<div style="font-size:1rem;font-weight:700;color:var(--text);margin-top:.2rem">'+inst.role+'</div></div></div>'+
+    '<div style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem"><strong style="color:var(--red)">Problema:</strong> '+inst.pain+'</div>'+
+    '<div style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem"><strong style="color:var(--green)">Lista-Eye entrega:</strong> '+inst.delivers+'</div>'+
+    '<div class="dp-grid">';
+  inst.detail.forEach(function(it){
+    h+='<div class="dp-item"><div class="dp-lbl">'+it.l+'</div><div class="dp-v">'+it.v+'</div><div class="dp-d">'+it.d+'</div></div>';
+  });
+  h+='</div></div>';
+  dp.innerHTML=h;
+}
+
+function buildObsLog(){
+  var container=document.getElementById("obsLog");container.innerHTML="";
+  var entries=[
+    {ts:"2026-04-08 10:22:18",actor:"ListaEye Sistema",action:"Segmentación v2.1 ejecutada — 342.800 casos procesados en SS Metro Central",detail:"4 segmentos: Crítico 28.400 · Alto 84.200 · Medio 142.800 · Seguimiento 87.400"},
+    {ts:"2026-04-08 09:14:02",actor:"Sub. Redes Asistenciales",action:"Depuración batch aprobada — 1.240 casos eliminados del stock piloto",detail:"487 fallecidos (cruce RCivil) + 412 no contactables + 341 resueltos · Ahorro gestión: -0,36% stock"},
+    {ts:"2026-04-07 16:30:44",actor:"FONASA-Compras",action:"Derivación MLE aprobada — 340 casos Traumatología → Clínica Las Condes",detail:"Precio paquete: $780k/caso (vs MAI $920k) · Fundamento costo-efectividad documentado · Ref: MLE-2026-0340"},
+    {ts:"2026-04-07 11:00:00",actor:"Comité TE SS Metro",action:"Sesión mensual — Revisión stock crítico y plan pabellones abril 2026",detail:"Acta N°04-2026 · Participantes: Director SS, Subdirectores, FONASA Regional · 3 derivaciones MLE aprobadas"},
+    {ts:"2026-04-05 08:00:00",actor:"DIPRES",action:"Informe trimestral recibido — Avance Plan Nacional Tiempos de Espera",detail:"Stock piloto: -1,8% vs línea base · Mediana consultas: 264 días (meta: <150) · Egresos T1: +22%"},
+  ];
+  obsEntries.forEach(function(e){entries.unshift(e)});
+  document.getElementById("obsCount").textContent=entries.length+" entradas";
+  entries.forEach(function(e){
+    var d=document.createElement("div");d.className="observ-log";
+    d.innerHTML='<div class="ol-head"><span class="ol-ts">'+e.ts+'</span><span class="ol-actor">'+e.actor+'</span></div>'+
+      '<div class="ol-action">'+e.action+'</div>'+
+      '<div class="ol-detail">'+e.detail+'</div>';
+    container.appendChild(d);
+  });
+}
+
+function addObsLog(){
+  var now=new Date().toLocaleString("es-CL").replace(",","");
+  obsEntries.unshift({ts:now,actor:"ListaEye Sistema",action:"Evento registrado manualmente por operador",detail:"Timestamp: "+new Date().toISOString()+" · Hash: "+Math.random().toString(36).substr(2,12).toUpperCase()});
+  buildObsLog();
+}
+
+function buildReports(){
+  var rl=document.getElementById("reportList");rl.innerHTML="";
+  REPORTS.forEach(function(r){
+    var d=document.createElement("div");d.className="report-card";
+    d.innerHTML='<div class="rc-head"><span class="rc-title">'+r.icon+' '+r.title+'</span><span class="badge">'+r.badge+'</span></div>'+
+      '<div class="rc-meta">'+r.sub+' — '+r.period+'</div>'+
+      '<div class="prog-bar"><div class="prog-fill" id="pf-'+r.pdf.replace('.pdf','')+'"></div></div>';
+    d.onclick=function(){openReport(r)};
+    rl.appendChild(d);
+  });
+}
+
+function openReport(r){
+  var pf=document.getElementById("pf-"+r.pdf.replace('.pdf',''));if(!pf)return;
+  pf.style.width="0%";var w=0;
+  var iv=setInterval(function(){
+    w+=Math.floor(Math.random()*22)+12;if(w>=100){w=100;pf.style.width="100%";clearInterval(iv);
+      setTimeout(function(){alert("📄 En producción: "+r.title+"\nReporte generado automáticamente y distribuido a los destinatarios institucionales correspondientes.");},200);return;}
+    pf.style.width=w+"%";},55);
+}
+
+function simScenario(type){
+  if(type==="random"){var t=["depura","critico","pabellon","mle","egreso"];type=t[Math.floor(Math.random()*t.length)];}
+  var sc=SCENARIOS[type];if(!sc||!sc.msg)return;
+  var now=new Date().toLocaleTimeString("es-CL");
+  ["alertArea","depuraAlerts","capAlerts"].forEach(function(aid){
+    var area=document.getElementById(aid);if(!area)return;
+    var d=document.createElement("div");d.className="alert-banner "+sc.cls;
+    d.innerHTML='<span style="font-family:monospace;font-size:.75rem;flex-shrink:0">['+now+']</span><span>'+sc.msg+'</span>';
+    area.insertBefore(d,area.firstChild);
+    if(area.children.length>2)area.removeChild(area.lastChild);
+  });
+  var isOk=["depura","egreso","mle","jornada"].indexOf(type)>=0;
+  var isWarn=["pabellon","noshow"].indexOf(type)>=0;
+  var ev=document.createElement("div");
+  ev.className="feed-item "+(isOk?"new":isWarn?"warn":"alert");
+  ev.innerHTML='<div class="fi-dot '+(isOk?"ok":isWarn?"warn":"err")+'">'+(isOk?"✓":isWarn?"!":"⚑")+'</div>'+
+    '<div style="flex:1"><div class="fi-name">'+sc.msg.substring(2,85)+'…</div>'+
+    '<div class="fi-meta"><span>'+now+'</span><span>Simulación Lista-Eye</span></div></div>'+
+    '<span class="status-pill '+(isOk?"sp-ok":isWarn?"sp-warn":"sp-err")+'">'+(isOk?"Completado":isWarn?"En gestión":"Alerta activa")+'</span>';
+  var fo=document.getElementById("feedMain");
+  if(fo){fo.insertBefore(ev,fo.firstChild);if(fo.children.length>7)fo.removeChild(fo.lastChild);}
+  if(type==="depura"){totalFantasma+=1240;}
+  else if(type==="egreso"){totalEgresos+=847;}
+  else if(type==="mle"){totalMLE+=340;totalEgresos+=120;}
+  else if(type==="jornada"){totalEgresos+=24;}
+  updateKPIs();
+  obsEntries.unshift({ts:new Date().toLocaleString("es-CL").replace(",",""),actor:"ListaEye Simulador",action:sc.msg.substring(2,100),detail:"Escenario: "+type+" · "+new Date().toISOString()});
+  buildObsLog();
+}
+
+function addRandomEvent(){
+  var ev=EVENTS_FEED[Math.floor(Math.random()*EVENTS_FEED.length)];
+  if(ev.type==="ok"){totalEgresos+=Math.floor(Math.random()*30)+10;}
+  updateKPIs();
+  var d=document.createElement("div");d.className="feed-item new";
+  d.innerHTML='<div class="fi-dot '+(ev.type==="ok"?"ok":"warn")+'">'+(ev.type==="ok"?"✓":"!")+'</div>'+
+    '<div style="flex:1"><div class="fi-name">'+ev.name+'</div>'+
+    '<div class="fi-meta"><span>'+ev.cat+'</span><span>'+ev.detalle+'</span><span>hace 1 min</span></div></div>'+
+    '<span class="status-pill '+(ev.type==="ok"?"sp-ok":"sp-warn")+'">'+(ev.type==="ok"?"Completado":"Acción requerida")+'</span>';
+  var fo=document.getElementById("feedMain");
+  if(fo){fo.insertBefore(d,fo.firstChild);if(fo.children.length>7)fo.removeChild(fo.lastChild);}
+  setTimeout(function(){d.classList.remove("new");},1800);
+}
+
+function changeServicio(v){currentServicio=v;updateKPIs();buildCharts();}
+
+function showPanel(id,btn){
+  document.querySelectorAll(".panel-wrap").forEach(function(p){p.classList.remove("active");});
+  document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
+  var panel=document.getElementById("panel-"+id);if(panel)panel.classList.add("active");
+  if(btn)btn.classList.add("active");
+  if(id==="depuracion")setTimeout(buildDepuraCharts,80);
+  if(id==="capacidad"){setTimeout(buildCapCharts,80);buildPabGrid();}
+  if(id==="normativa")setTimeout(buildMedianaChart,80);
+}
+
+function updateTimestamp(){
+  var el=document.getElementById("liveTs");
+  if(el)el.textContent="LIVE "+new Date().toLocaleTimeString("es-CL");
+}
+
+buildFeed();buildDepuraTable();buildSegTable();buildNorma();buildInstituciones();buildObsLog();buildReports();buildPabGrid();updateKPIs();
+setTimeout(buildCharts,100);
+setInterval(addRandomEvent,5500);
+setInterval(updateTimestamp,1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CompraEye — Optimización Compra Quirúrgica | GL Strategic × FONASA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0D1117;--surface:#131920;--panel:#1A2332;--border:#243044;
+  --text:#E8EDF5;--muted:#7A8BA0;
+  --blue:#378ADD;--blue-lt:#5BA8F5;
+  --green:#1D9E75;--red:#E05252;--warn:#C9A84C;
+  --violet:#8B7CF6;--teal:#007B83;--gold:#C9A84C;
+  --orange:#D4824A;--orange-lt:#F0A070;
+}
+html,body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--ink);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(55,138,221,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(55,138,221,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.layout{position:relative;z-index:1}
+header{background:linear-gradient(135deg,#0D1117,#131920);border-bottom:2px solid rgba(55,138,221,.35);padding:0 2rem;height:68px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:38px;height:38px;background:linear-gradient(135deg,var(--blue),var(--blue-lt));border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.72rem;letter-spacing:.5px;text-align:center;line-height:1.2}
+.brand-name{font-size:1.1rem;font-weight:700;color:var(--text)}.brand-name span{color:var(--blue-lt)}
+.brand-sub{font-size:.62rem;color:var(--muted);letter-spacing:.05em}
+.header-right{display:flex;align-items:center;gap:1rem}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);font-family:monospace}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);box-shadow:0 0 6px var(--blue);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+select{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:8px;font-size:.8rem;cursor:pointer}
+select:focus{outline:none;border-color:var(--blue)}
+.shell{display:grid;grid-template-columns:225px 1fr;min-height:calc(100vh - 68px)}
+aside{background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:68px;height:calc(100vh - 68px);overflow-y:auto}
+.client-badge{margin:0 1rem 1.5rem;padding:.9rem 1rem;background:rgba(55,138,221,.07);border:1px solid rgba(55,138,221,.25);border-radius:10px}
+.cb-label{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.cb-name{font-size:.88rem;color:var(--blue-lt);font-weight:700;margin-top:.25rem}
+.cb-detail{font-size:.65rem;color:var(--muted);margin-top:.2rem}
+.nav-section{padding:.5rem 1rem;margin-bottom:.5rem}
+.nav-label{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:.6rem}
+.nav-item{display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:7px;cursor:pointer;font-size:.8rem;color:var(--muted);transition:all .2s;margin-bottom:.15rem;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover,.nav-item.active{background:rgba(55,138,221,.1);color:var(--blue-lt)}
+.nav-item.active{border-left:3px solid var(--blue);padding-left:calc(.8rem - 3px)}
+main{padding:2rem;overflow-y:auto}
+.panel-wrap{display:none}.panel-wrap.active{display:block}
+.page-title{font-size:1.6rem;font-weight:700;color:var(--text);margin-bottom:.25rem}
+.page-sub{font-size:.8rem;color:var(--muted);margin-bottom:1.5rem}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 0 24px rgba(55,138,221,.1)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),transparent)}
+.kpi.green::before{background:linear-gradient(90deg,var(--green),transparent)}
+.kpi.red::before{background:linear-gradient(90deg,var(--red),transparent)}
+.kpi.gold::before{background:linear-gradient(90deg,var(--gold),transparent)}
+.kpi.violet::before{background:linear-gradient(90deg,var(--violet),transparent)}
+.kpi.orange::before{background:linear-gradient(90deg,var(--orange),transparent)}
+.kpi.teal::before{background:linear-gradient(90deg,var(--teal),transparent)}
+.kpi-label{font-size:.67rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi-val{font-size:1.75rem;font-weight:700;margin:.4rem 0 .2rem;line-height:1}
+.kpi-val.blue{color:var(--blue-lt)}.kpi-val.green{color:var(--green)}.kpi-val.red{color:var(--red)}.kpi-val.gold{color:var(--gold)}.kpi-val.violet{color:var(--violet)}.kpi-val.orange{color:var(--orange-lt)}.kpi-val.teal{color:var(--teal)}
+.kpi-sub{font-size:.7rem;color:var(--muted)}.kpi-sub.up{color:var(--green)}.kpi-sub.down{color:var(--red)}
+.kpi-icon{position:absolute;top:1rem;right:1.25rem;font-size:1.4rem;opacity:.13}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.card-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;font-size:.92rem;font-weight:600}
+.badge{font-size:.62rem;padding:.18rem .55rem;border-radius:12px;background:rgba(55,138,221,.12);color:var(--blue-lt);letter-spacing:.05em;text-transform:uppercase}
+.badge.ok{background:rgba(29,158,117,.12);color:var(--green)}
+.badge.err{background:rgba(224,82,82,.12);color:var(--red)}
+.badge.warn{background:rgba(201,168,76,.12);color:var(--warn)}
+.badge.violet{background:rgba(139,124,246,.12);color:var(--violet)}
+.badge.orange{background:rgba(212,130,74,.12);color:var(--orange-lt)}
+.badge.teal{background:rgba(0,123,131,.12);color:var(--teal)}
+.chart-row{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.chart-row-equal{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.chart-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.chart-wrap{position:relative;height:200px}
+.chart-wrap-tall{position:relative;height:260px}
+.feed{display:flex;flex-direction:column;gap:6px}
+.feed-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:.78rem;transition:all .4s}
+.feed-item.new{border-color:rgba(55,138,221,.4);background:rgba(55,138,221,.05)}
+.feed-item.alert{border-color:rgba(224,82,82,.4);background:rgba(224,82,82,.05)}
+.feed-item.warn{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.05)}
+.feed-item.ok-glow{border-color:rgba(29,158,117,.4);background:rgba(29,158,117,.05)}
+.fi-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
+.fi-dot.ok{background:rgba(29,158,117,.2);color:var(--green)}
+.fi-dot.err{background:rgba(224,82,82,.2);color:var(--red)}
+.fi-dot.warn{background:rgba(201,168,76,.2);color:var(--warn)}
+.fi-dot.blue{background:rgba(55,138,221,.2);color:var(--blue-lt)}
+.fi-dot.violet{background:rgba(139,124,246,.2);color:var(--violet)}
+.fi-dot.orange{background:rgba(212,130,74,.2);color:var(--orange-lt)}
+.fi-name{font-weight:600;color:var(--text);margin-bottom:3px}
+.fi-meta{color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.fi-save{color:var(--green);font-weight:600}
+.fi-cost{color:var(--orange-lt);font-weight:600}
+.status-pill{display:inline-flex;align-items:center;padding:.15rem .5rem;border-radius:10px;font-size:.65rem;font-weight:600;white-space:nowrap}
+.sp-ok{background:rgba(29,158,117,.15);color:var(--green)}
+.sp-warn{background:rgba(201,168,76,.15);color:var(--warn)}
+.sp-err{background:rgba(224,82,82,.15);color:var(--red)}
+.sp-blue{background:rgba(55,138,221,.15);color:var(--blue-lt)}
+.sp-violet{background:rgba(139,124,246,.15);color:var(--violet)}
+.sp-teal{background:rgba(0,123,131,.15);color:var(--teal)}
+.sp-orange{background:rgba(212,130,74,.15);color:var(--orange-lt)}
+.btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:none;font-size:.78rem;cursor:pointer;color:var(--muted);transition:all .2s}
+.btn:hover{background:rgba(55,138,221,.1);color:var(--blue-lt);border-color:rgba(55,138,221,.3)}
+.btn-blue{background:rgba(55,138,221,.15);color:var(--blue-lt);border-color:rgba(55,138,221,.3);font-weight:700}
+.btn-blue:hover{background:rgba(55,138,221,.28)}
+.btn-green{background:rgba(29,158,117,.15);color:var(--green);border-color:rgba(29,158,117,.3);font-weight:700}
+.btn-red{background:rgba(224,82,82,.15);color:var(--red);border-color:rgba(224,82,82,.3);font-weight:700}
+.btn-gold{background:var(--gold);color:#0D1117;border-color:var(--gold);font-weight:700}
+.sim-bar{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center}
+.sim-label{font-size:.75rem;color:var(--muted)}
+.alert-banner{padding:10px 16px;border-radius:8px;margin-bottom:.75rem;font-size:.8rem;display:flex;align-items:flex-start;gap:10px;border:1px solid}
+.ab-err{background:rgba(224,82,82,.08);border-color:rgba(224,82,82,.3);color:#F08080}
+.ab-warn{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.3);color:var(--warn)}
+.ab-ok{background:rgba(29,158,117,.08);border-color:rgba(29,158,117,.3);color:var(--green)}
+.ab-blue{background:rgba(55,138,221,.08);border-color:rgba(55,138,221,.3);color:var(--blue-lt)}
+.ab-orange{background:rgba(212,130,74,.08);border-color:rgba(212,130,74,.3);color:var(--orange-lt)}
+.inst-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+.inst-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.1rem;cursor:pointer;transition:all .2s}
+.inst-card:hover{border-color:rgba(55,138,221,.5);transform:translateY(-1px)}
+.inst-card.sel{border-color:var(--blue);background:rgba(55,138,221,.07)}
+.ic-sigla{font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.12em;margin-bottom:.4rem}
+.ic-role{font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:.3rem}
+.ic-val{font-size:1.5rem;font-weight:700;margin-bottom:.15rem}
+.ic-sub{font-size:.7rem;color:var(--muted)}
+.detail-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1.5rem}
+.dp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:.75rem}
+.dp-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:.75rem}
+.dp-item{background:var(--panel);border-radius:8px;padding:.75rem}
+.dp-lbl{font-size:.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
+.dp-v{font-size:1.1rem;font-weight:700;color:var(--text)}
+.dp-d{font-size:.7rem;color:var(--muted);margin-top:.15rem}
+.report-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.75rem;cursor:pointer;transition:all .2s}
+.report-card:hover{border-color:rgba(55,138,221,.4);transform:translateY(-1px)}
+.rc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem}
+.rc-title{font-size:.85rem;font-weight:600;color:var(--text)}
+.rc-meta{font-size:.72rem;color:var(--muted);margin-bottom:.5rem}
+.prog-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;background:var(--blue);width:0%;transition:width .1s linear}
+table{width:100%;border-collapse:collapse;font-size:.77rem}
+thead th{text-align:left;padding:.6rem .8rem;font-size:.61rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)}
+tbody tr{border-bottom:1px solid rgba(36,48,68,.6);transition:background .15s}
+tbody tr:hover{background:rgba(55,138,221,.03)}
+tbody td{padding:.65rem .8rem;color:var(--text);vertical-align:middle}
+.td-mono{font-family:monospace;font-size:.73rem;color:var(--muted)}
+.td-proc{font-weight:600;font-size:.77rem}
+.td-save{color:var(--green);font-weight:700;font-family:monospace}
+.td-cost{color:var(--orange-lt);font-weight:700;font-family:monospace}
+.prest-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:3px;width:80px}
+.prest-fill{height:100%;border-radius:3px}
+.espec-tag{display:inline-block;padding:.1rem .45rem;border-radius:6px;font-size:.62rem;font-weight:600}
+.et-trauma{background:rgba(139,124,246,.15);color:var(--violet)}
+.et-oftal{background:rgba(0,123,131,.15);color:var(--teal)}
+.et-cirug{background:rgba(55,138,221,.15);color:var(--blue-lt)}
+.et-cardio{background:rgba(212,130,74,.15);color:var(--orange-lt)}
+.prest-tag{display:inline-block;padding:.1rem .4rem;border-radius:6px;font-size:.62rem;font-weight:600}
+.pt-pub{background:rgba(29,158,117,.12);color:var(--green)}
+.pt-priv{background:rgba(55,138,221,.12);color:var(--blue-lt)}
+.pt-mle{background:rgba(139,124,246,.12);color:var(--violet)}
+.ahorro-chip{display:inline-flex;align-items:center;gap:4px;padding:.15rem .5rem;border-radius:8px;font-size:.68rem;font-weight:700}
+.ac-high{background:rgba(29,158,117,.15);color:var(--green)}
+.ac-med{background:rgba(55,138,221,.15);color:var(--blue-lt)}
+.ac-low{background:rgba(201,168,76,.15);color:var(--warn)}
+.matrix-wrap{overflow-x:auto;margin-bottom:1.5rem}
+.matrix-table{width:100%;border-collapse:collapse;font-size:.76rem}
+.matrix-table th{background:rgba(55,138,221,.08);padding:.7rem .9rem;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border:1px solid var(--border);text-align:center}
+.matrix-table td{padding:.65rem .9rem;border:1px solid var(--border);vertical-align:middle;text-align:center}
+.matrix-table tr:hover td{background:rgba(55,138,221,.04)}
+.heat-high{background:rgba(29,158,117,.15);color:var(--green);font-weight:700}
+.heat-med{background:rgba(55,138,221,.1);color:var(--blue-lt);font-weight:600}
+.heat-low{background:rgba(224,82,82,.1);color:var(--red);font-weight:600}
+.heat-warn{background:rgba(201,168,76,.1);color:var(--warn);font-weight:600}
+.info-box{background:rgba(55,138,221,.05);border:1px solid rgba(55,138,221,.2);border-radius:8px;padding:.85rem 1rem;font-size:.78rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+.info-box strong{color:var(--text)}
+.norm-chip{display:inline-block;padding:.1rem .4rem;border-radius:6px;font-size:.64rem;font-weight:600;background:rgba(55,138,221,.1);color:var(--blue-lt)}
+.observ-log{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.75rem}
+.ol-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem}
+.ol-ts{font-family:monospace;font-size:.7rem;color:var(--muted)}
+.ol-actor{font-size:.72rem;font-weight:600;padding:.1rem .4rem;border-radius:6px;background:rgba(55,138,221,.1);color:var(--blue-lt)}
+.ol-action{font-size:.8rem;color:var(--text);margin:.2rem 0}
+.ol-detail{font-size:.72rem;color:var(--muted)}
+.resource-bar{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.res-btn{display:flex;align-items:center;gap:.5rem;padding:.55rem .9rem;border-radius:8px;border:1px solid var(--border);background:var(--panel);font-size:.78rem;color:var(--text);cursor:pointer;text-decoration:none;transition:all .2s}
+.res-btn:hover{border-color:var(--blue);color:var(--blue-lt)}
+footer{padding:1.25rem 2rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:.7rem;color:var(--muted)}
+footer a{color:var(--blue-lt);text-decoration:none}
+@media(max-width:900px){.shell{grid-template-columns:1fr}aside{display:none}.kpi-grid{grid-template-columns:repeat(2,1fr)}.chart-row,.chart-row-equal,.chart-row-3{grid-template-columns:1fr}.inst-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.kpi-grid{grid-template-columns:1fr}main{padding:1rem}.inst-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+<header>
+  <div class="brand">
+    <div class="brand-mark">CQ<br>EYE</div>
+    <div>
+      <div class="brand-name">Compra<span>Eye</span> · Optimización Compra Quirúrgica &amp; Ambulatoria</div>
+      <div class="brand-sub">GL Strategic × FONASA · Programa Fonasa 2026 · Eje 3 · Alto Rezago · Observabilidad &amp; Trazabilidad</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div><span id="liveTs">LIVE</span></div>
+    <select id="pilotoSel" onchange="changePiloto(this.value)">
+      <option value="trauma">Piloto — Traumatología</option>
+      <option value="oftal">Piloto — Oftalmología (Cataratas)</option>
+      <option value="cirug">Piloto — Cirugía Digestiva</option>
+      <option value="full">Consolidado 3 especialidades</option>
+    </select>
+  </div>
+</header>
+
+<div class="shell">
+<aside>
+  <div class="client-badge">
+    <div class="cb-label">Especialidad piloto activa</div>
+    <div class="cb-name" id="pilotoName">Traumatología</div>
+    <div class="cb-detail" id="pilotoDetail">Prótesis · Artroscopías · 112K casos en lista</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Módulos</div>
+    <button class="nav-item active" onclick="showPanel('overview',this)">📊 Panel Ejecutivo</button>
+    <button class="nav-item" onclick="showPanel('mapa',this)">🗺 Mapa Oferta–Demanda</button>
+    <button class="nav-item" onclick="showPanel('mix',this)">⚖️ Mix MAI / MLE</button>
+    <button class="nav-item" onclick="showPanel('prestadores',this)">🏥 Prestadores</button>
+    <button class="nav-item" onclick="showPanel('instituciones',this)">🏛 Actores</button>
+    <button class="nav-item" onclick="showPanel('normativa',this)">⚖️ Normativa &amp; MLE</button>
+    <button class="nav-item" onclick="showPanel('observabilidad',this)">🔍 Observabilidad</button>
+    <button class="nav-item" onclick="showPanel('reportes',this)">📄 Reportes</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Simular escenario</div>
+    <button class="nav-item" onclick="simScenario('paquete')">📦 Paquete privado negociado</button>
+    <button class="nav-item" onclick="simScenario('sobreprecio')">⚠️ Sobreprecio prestador</button>
+    <button class="nav-item" onclick="simScenario('capacidad')">🏥 Capacidad pública subutilizada</button>
+    <button class="nav-item" onclick="simScenario('contrato')">📋 Contrato suscrito</button>
+    <button class="nav-item" onclick="simScenario('resultado')">✅ Resultado verificado</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Capa técnica</div>
+    <div style="margin:.25rem 0;padding:.75rem;background:rgba(55,138,221,.06);border:1px solid rgba(55,138,221,.2);border-radius:8px">
+      <div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">API Compra Estratégica</div>
+      <div style="font-size:.65rem;color:var(--blue-lt);margin-top:.3rem;font-family:monospace">POST /api/compra-eye.php</div>
+      <div style="font-size:.6rem;color:var(--muted);margin-top:.35rem">Trazabilidad · Contraloría · DIPRES</div>
+    </div>
+  </div>
+</aside>
+
+<main>
+
+<!-- OVERVIEW -->
+<div id="panel-overview" class="panel-wrap active">
+  <div class="page-title">Panel Ejecutivo — Compra Quirúrgica &amp; Ambulatoria</div>
+  <div class="page-sub" id="overviewSub">Programa Fonasa 2026 · Eje 3: Piloto Traumatología · Optimización mix MAI/MLE · Sin aumento presupuesto global</div>
+
+  <div class="resource-bar">
+    <a href="#" class="res-btn" onclick="showPanel('mapa',null);return false">🗺 <span>Mapa oferta–demanda</span></a>
+    <a href="#" class="res-btn" onclick="showPanel('mix',null);return false">⚖️ <span>Optimizar mix</span></a>
+    <a href="#" class="res-btn" onclick="showPanel('prestadores',null);return false">🏥 <span>Prestadores</span></a>
+    <a href="#" class="res-btn" onclick="showPanel('reportes',null);return false">📊 <span>Informe DIPRES</span></a>
+  </div>
+
+  <div id="alertArea"></div>
+
+  <div class="kpi-grid">
+    <div class="kpi gold"><div class="kpi-icon">💰</div>
+      <div class="kpi-label">Costo promedio / caso (MAI)</div>
+      <div class="kpi-val gold" id="kCostoMAI">$920k</div>
+      <div class="kpi-sub" id="kCostoMAISub">línea base Traumatología</div></div>
+    <div class="kpi green"><div class="kpi-icon">📉</div>
+      <div class="kpi-label">Ahorro por mezcla óptima</div>
+      <div class="kpi-val green" id="kAhorro">MM$ 0</div>
+      <div class="kpi-sub up" id="kAhorroSub">Acumulado piloto</div></div>
+    <div class="kpi blue"><div class="kpi-icon">🔄</div>
+      <div class="kpi-label">Casos resueltos (piloto)</div>
+      <div class="kpi-val blue" id="kCasos">0</div>
+      <div class="kpi-sub up" id="kCasosSub">Sin aumento presupuesto</div></div>
+    <div class="kpi violet"><div class="kpi-icon">📐</div>
+      <div class="kpi-label">ROI compra estratégica</div>
+      <div class="kpi-val violet" id="kROI">0%</div>
+      <div class="kpi-sub">Eficiencia vs línea base</div></div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi orange"><div class="kpi-icon">🗺</div>
+      <div class="kpi-label">Stock en lista piloto</div>
+      <div class="kpi-val orange" id="kStock">112.400</div>
+      <div class="kpi-sub down" id="kStockSub">Traumatología · 3 SS</div></div>
+    <div class="kpi"><div class="kpi-icon">🏥</div>
+      <div class="kpi-label">Prestadores mapeados</div>
+      <div class="kpi-val blue" id="kPrest">48</div>
+      <div class="kpi-sub" id="kPrestSub">públicos + privados</div></div>
+    <div class="kpi teal"><div class="kpi-icon">📋</div>
+      <div class="kpi-label">Contratos MLE vigentes</div>
+      <div class="kpi-val teal" id="kContr">0</div>
+      <div class="kpi-sub up" id="kContrSub">Paquetes negociados</div></div>
+    <div class="kpi green"><div class="kpi-icon">✅</div>
+      <div class="kpi-label">Reducción mediana espera</div>
+      <div class="kpi-val green" id="kReduc">0%</div>
+      <div class="kpi-sub">Meta: -25% en especialidad</div></div>
+  </div>
+
+  <div class="chart-row">
+    <div class="card">
+      <div class="card-title">Resoluciones mensuales — MAI vs MLE vs Jornada ext. (casos)<span class="badge">evolución piloto</span></div>
+      <div class="chart-wrap"><canvas id="cResoluciones"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Mix actual vs óptimo<span class="badge blue">piloto activo</span></div>
+      <div class="chart-wrap"><canvas id="cMixPie"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Feed de eventos de compra estratégica<span class="badge ok" id="feedBadge">● live</span></div>
+    <div class="feed" id="feedMain"></div>
+  </div>
+</div>
+
+<!-- MAPA OFERTA DEMANDA -->
+<div id="panel-mapa" class="panel-wrap">
+  <div class="page-title">🗺 Mapa Oferta – Demanda</div>
+  <div class="page-sub">Matriz stock de lista vs capacidad de resolución por Servicio de Salud y prestador · Base de la compra estratégica</div>
+
+  <div class="info-box">
+    <strong>Concepto:</strong> La compra estratégica comienza con un mapa preciso de cuántos casos hay en lista por servicio y especialidad, y cuánta capacidad real (pública + privada) existe para resolverlos. La brecha entre ambos define dónde se negocia, qué modalidad usar y a qué precio.
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Matriz oferta–demanda — Especialidades piloto por Servicio de Salud<span class="badge orange">Mapa actualizado</span></div>
+    <div class="matrix-wrap">
+      <table class="matrix-table" id="mapaTable">
+        <thead>
+          <tr>
+            <th>Servicio de Salud</th>
+            <th>Esp. / Procedimiento</th>
+            <th>Stock lista</th>
+            <th>Cap. pública anual</th>
+            <th>Brecha</th>
+            <th>Cap. privada disponible</th>
+            <th>Costo prom. MAI</th>
+            <th>Costo prom. MLE</th>
+            <th>Diferencia</th>
+            <th>Recomendación</th>
+          </tr>
+        </thead>
+        <tbody id="mapaTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="chart-row-equal">
+    <div class="card">
+      <div class="card-title">Brecha oferta–demanda por especialidad<span class="badge warn">Casos sin resolver</span></div>
+      <div class="chart-wrap"><canvas id="cBrecha"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Diferencial de costo MAI vs MLE<span class="badge">$ por caso</span></div>
+      <div class="chart-wrap"><canvas id="cCostos"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- MIX MAI / MLE -->
+<div id="panel-mix" class="panel-wrap">
+  <div class="page-title">⚖️ Optimización Mix MAI / MLE</div>
+  <div class="page-sub">Rediseño del mix de resoluciones para las especialidades piloto · Más eficiencia sin aumentar presupuesto global</div>
+
+  <div class="info-box">
+    <strong>Principio rector:</strong> El objetivo NO es privatizar ni aumentar el gasto. Es usar el presupuesto existente de forma más inteligente: derivar al privado cuando es costo-efectivo, liberar capacidad pública para casos complejos, y negociar paquetes a precios y calidad auditables. Todo queda trazado en la capa de observabilidad.
+  </div>
+
+  <div id="mixAlerts"></div>
+
+  <div class="sim-bar">
+    <span class="sim-label">Simular:</span>
+    <button class="btn" onclick="simScenario('paquete')">📦 Paquete MLE negociado</button>
+    <button class="btn btn-red" onclick="simScenario('sobreprecio')">⚠️ Sobreprecio detectado</button>
+    <button class="btn btn-green" onclick="simScenario('resultado')">✅ Resultado verificado</button>
+    <button class="btn btn-gold" onclick="simScenario('random')">⚡ Evento aleatorio</button>
+  </div>
+
+  <div class="chart-row-3">
+    <div class="card">
+      <div class="card-title" style="font-size:.82rem">Traumatología<span class="badge violet">Prioridad 1</span></div>
+      <div class="chart-wrap" style="height:160px"><canvas id="cMixTrauma"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="font-size:.82rem">Oftalmología<span class="badge teal">Prioridad 1</span></div>
+      <div class="chart-wrap" style="height:160px"><canvas id="cMixOftal"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="font-size:.82rem">Cirugía Digestiva<span class="badge blue">Prioridad 2</span></div>
+      <div class="chart-wrap" style="height:160px"><canvas id="cMixCirug"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Simulador de ahorro por ajuste de mix<span class="badge ok">Proyección 12 meses</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-top:.5rem">
+      <div class="dp-item">
+        <div class="dp-lbl">Mix actual (sin cambios)</div>
+        <div class="dp-v" style="color:var(--muted)">MM$ 0</div>
+        <div class="dp-d">60% MAI · 32% MLE · 8% Jornada ext.</div>
+        <div style="height:4px;background:var(--border);border-radius:2px;margin-top:6px"><div style="height:100%;width:0%;background:var(--muted);border-radius:2px"></div></div>
+      </div>
+      <div class="dp-item">
+        <div class="dp-lbl">Optimización leve (+10% MLE)</div>
+        <div class="dp-v" style="color:var(--blue-lt)" id="sim10">MM$ 0</div>
+        <div class="dp-d">50% MAI · 42% MLE · 8% Jornada ext.</div>
+        <div style="height:4px;background:var(--border);border-radius:2px;margin-top:6px"><div id="bar10" style="height:100%;width:0%;background:var(--blue);border-radius:2px;transition:width .8s"></div></div>
+      </div>
+      <div class="dp-item">
+        <div class="dp-lbl">Optimización moderada (+20% MLE)</div>
+        <div class="dp-v" style="color:var(--green)" id="sim20">MM$ 0</div>
+        <div class="dp-d">40% MAI · 52% MLE · 8% Jornada ext.</div>
+        <div style="height:4px;background:var(--border);border-radius:2px;margin-top:6px"><div id="bar20" style="height:100%;width:0%;background:var(--green);border-radius:2px;transition:width .8s"></div></div>
+      </div>
+      <div class="dp-item">
+        <div class="dp-lbl">Optimización máxima (+30% MLE)</div>
+        <div class="dp-v" style="color:var(--warn)" id="sim30">MM$ 0</div>
+        <div class="dp-d">30% MAI · 62% MLE · 8% Jornada ext.</div>
+        <div style="height:4px;background:var(--border);border-radius:2px;margin-top:6px"><div id="bar30" style="height:100%;width:0%;background:var(--warn);border-radius:2px;transition:width .8s"></div></div>
+      </div>
+    </div>
+    <div style="text-align:right;margin-top:.75rem">
+      <button class="btn btn-blue" onclick="runSimMix()">▶ Calcular ahorro</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRESTADORES -->
+<div id="panel-prestadores" class="panel-wrap">
+  <div class="page-title">🏥 Mapa de Prestadores</div>
+  <div class="page-sub">Prestadores públicos y privados con capacidad mapeada · Costo/caso · Calidad · Elegibilidad MLE · Contratos vigentes</div>
+
+  <div id="prestAlerts"></div>
+
+  <div class="sim-bar">
+    <span class="sim-label">Simular:</span>
+    <button class="btn" onclick="simScenario('contrato')">📋 Contrato MLE suscrito</button>
+    <button class="btn btn-red" onclick="simScenario('sobreprecio')">⚠️ Sobreprecio detectado</button>
+    <button class="btn btn-green" onclick="simScenario('capacidad')">🏥 Capacidad subutilizada</button>
+    <button class="btn btn-gold" onclick="simScenario('random')">⚡ Evento aleatorio</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Registro de prestadores — Especialidades piloto<span class="badge" id="prestCount">cargando…</span></div>
+    <table>
+      <thead><tr>
+        <th>Prestador</th><th>Tipo</th><th>Especialidad</th>
+        <th>Cap. disponible</th><th>Costo/caso</th><th>vs. MAI ref.</th>
+        <th>Calidad</th><th>Estado contrato</th><th>Elegib. MLE</th>
+      </tr></thead>
+      <tbody id="prestTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ACTORES -->
+<div id="panel-instituciones" class="panel-wrap">
+  <div class="page-title">🏛 Actores del Eje 3</div>
+  <div class="page-sub">Selecciona un actor para ver su rol, KPIs y valor que entrega Compra-Eye</div>
+  <div class="inst-grid" id="instGrid"></div>
+  <div id="instDetail"></div>
+</div>
+
+<!-- NORMATIVA -->
+<div id="panel-normativa" class="panel-wrap">
+  <div class="page-title">⚖️ Marco Normativo — MLE, MAI y Compra Estratégica</div>
+  <div class="page-sub">Modalidad Libre Elección · Red Preferente · Aranceles FONASA · Glosas DIPRES · Contraloría</div>
+
+  <div id="normAlerts" style="margin-bottom:1rem"></div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Marco regulatorio compra de servicios de salud<span class="badge ok">Monitoreado</span></div>
+    <table>
+      <thead><tr><th style="width:30%">Instrumento</th><th style="width:15%">Emisor</th><th style="width:12%">Relevancia</th><th style="width:13%">Estado</th><th style="width:30%">Implicación para el piloto</th></tr></thead>
+      <tbody id="normTbody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Comparativa aranceles FONASA vs precios de mercado<span class="badge">$ por procedimiento piloto</span></div>
+    <div class="chart-wrap-tall"><canvas id="cAranceles"></canvas></div>
+    <div style="margin-top:.75rem;font-size:.75rem;color:var(--muted)">
+      🔵 Arancel MAI (FONASA) · 🟢 Precio paquete MLE negociado · 🔴 Precio mercado libre (sin negociación)<br>
+      La compra estratégica busca que el precio MLE negociado quede entre el arancel MAI y el precio de mercado libre, con calidad auditada.
+    </div>
+  </div>
+</div>
+
+<!-- OBSERVABILIDAD -->
+<div id="panel-observabilidad" class="panel-wrap">
+  <div class="page-title">🔍 Capa de Observabilidad y Trazabilidad</div>
+  <div class="page-sub">Registro inmutable de decisiones contractuales y de derivación · Auditable por Contraloría, DIPRES y tribunales</div>
+
+  <div class="info-box">
+    <strong>¿Por qué es crítica?</strong> Las decisiones de compra a privados son políticamente sensibles. Esta capa documenta el fundamento de cada contrato (precio, calidad, costo-efectividad vs MAI), los criterios de selección del prestador, y los resultados obtenidos. Permite defender cada decisión ante Contraloría o la opinión pública sin riesgo de arbitrariedad.
+  </div>
+
+  <div style="display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+    <button class="btn btn-blue" onclick="addObsLog()">⚡ Registrar decisión contractual</button>
+    <button class="btn">⬇ Exportar log auditado CSV</button>
+    <button class="btn">📄 Informe Contraloría PDF</button>
+    <button class="btn">📊 Vista DIPRES</button>
+  </div>
+
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-title">Registro de trazabilidad contractual<span class="badge" id="obsCount">0 entradas</span></div>
+    <div id="obsLog" style="max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div class="card">
+      <div class="card-title">Fuentes de datos<span class="badge ok">Activas</span></div>
+      <div style="font-size:.78rem;display:flex;flex-direction:column;gap:6px;margin-top:.25rem">
+        <div class="feed-item"><div class="fi-dot ok">✓</div><div><div class="fi-name">FONASA — Aranceles MAI y registros MLE</div><div class="fi-meta"><span>Mensual</span><span>Por especialidad y procedimiento</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot ok">✓</div><div><div class="fi-name">Visor Lista Espera — Stock por SS y esp.</div><div class="fi-meta"><span>Semanal</span><span>Vinculado a folio piloto</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot ok">✓</div><div><div class="fi-name">Prestadores privados — Precios y capacidad</div><div class="fi-meta"><span>Por contrato</span><span>Auditado por FONASA</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot warn">!</div><div><div class="fi-name">SIS — Resultados clínicos post-cirugía</div><div class="fi-meta"><span>Pendiente integración</span><span>Indicador calidad</span></div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Contratos trazados<span class="badge violet">Inmutable</span></div>
+      <div style="font-size:.78rem;display:flex;flex-direction:column;gap:6px;margin-top:.25rem">
+        <div class="feed-item ok-glow"><div class="fi-dot ok">✓</div><div><div class="fi-name">Contrato MLE Trauma — Clínica Las Condes</div><div class="fi-meta"><span>Firmado 01-Mar-2026</span><span>340 casos · $780k/caso</span></div></div></div>
+        <div class="feed-item ok-glow"><div class="fi-dot ok">✓</div><div><div class="fi-name">Paquete catarátas — Red de Salud UC</div><div class="fi-meta"><span>Firmado 15-Mar-2026</span><span>480 casos · $410k/caso</span></div></div></div>
+        <div class="feed-item"><div class="fi-dot blue">→</div><div><div class="fi-name">Negociación hernioplastía — INDISA</div><div class="fi-meta"><span>En trámite · Esperando precio final</span><span>~200 casos estimados</span></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORTES -->
+<div id="panel-reportes" class="panel-wrap">
+  <div class="page-title">📄 Reportes Institucionales</div>
+  <div class="page-sub">Informes certificados para DIPRES · Contraloría · Dirección FONASA · Minsal · Mesa técnica Eje 3</div>
+  <div id="reportList"></div>
+</div>
+
+</main>
+</div>
+
+<footer>
+  <span>© 2026 <a href="https://glstrategic.cl" target="_blank">GL Strategic</a> · CompraEye v1.0 — Programa Fonasa 2026 · Eje 3: Compra Quirúrgica y Ambulatoria de Alto Rezago</span>
+  <span style="font-family:monospace;font-size:.62rem">Powered by NovisEye Framework · fintech.ingenieriadegestion.cl</span>
+  <span>Confidencial · Mesa Técnica FONASA–Minsal · Solo uso interno</span>
+</footer>
+</div>
+
+<script>
+var PILOTOS={
+  trauma:{name:"Traumatología",detail:"Prótesis · Artroscopías · 112K casos",stock:112400,costoMAI:"$920k",costoMLE:"$780k",ahorro:0,casos:0,roi:0,prest:28,contr:0,reduc:0,
+    meses:["May 25","Jun 25","Jul 25","Ago 25","Sep 25","Oct 25","Nov 25","Dic 25","Ene 26","Feb 26","Mar 26","Abr 26"],
+    mai:[820,840,850,860,870,880,890,900,920,940,960,980],
+    mle:[280,300,320,310,340,360,380,400,420,430,450,470],
+    jext:[60,65,70,68,72,75,80,82,85,88,92,96]},
+  oftal:{name:"Oftalmología (Cataratas)",detail:"Facoemulsificación · 78K casos",stock:78200,costoMAI:"$480k",costoMLE:"$410k",ahorro:0,casos:0,roi:0,prest:18,contr:0,reduc:0,
+    meses:["May 25","Jun 25","Jul 25","Ago 25","Sep 25","Oct 25","Nov 25","Dic 25","Ene 26","Feb 26","Mar 26","Abr 26"],
+    mai:[420,435,440,450,460,465,470,480,490,500,510,520],
+    mle:[180,195,200,210,220,230,240,250,260,270,280,290],
+    jext:[40,42,45,44,48,50,52,54,56,58,60,62]},
+  cirug:{name:"Cirugía Digestiva",detail:"Colecistectomía · Hernias · 65K casos",stock:64800,costoMAI:"$640k",costoMLE:"$560k",ahorro:0,casos:0,roi:0,prest:22,contr:0,reduc:0,
+    meses:["May 25","Jun 25","Jul 25","Ago 25","Sep 25","Oct 25","Nov 25","Dic 25","Ene 26","Feb 26","Mar 26","Abr 26"],
+    mai:[340,350,360,365,370,380,385,390,395,400,410,420],
+    mle:[120,130,135,140,145,150,155,160,165,170,175,180],
+    jext:[30,32,34,33,35,36,38,39,40,41,42,44]},
+  full:{name:"Consolidado 3 especialidades",detail:"Trauma+Oftal+Cirug · 255K casos piloto",stock:255400,costoMAI:"$680k",costoMLE:"$580k",ahorro:0,casos:0,roi:0,prest:48,contr:0,reduc:0,
+    meses:["May 25","Jun 25","Jul 25","Ago 25","Sep 25","Oct 25","Nov 25","Dic 25","Ene 26","Feb 26","Mar 26","Abr 26"],
+    mai:[1580,1625,1650,1675,1700,1725,1745,1770,1805,1840,1880,1920],
+    mle:[580,625,655,660,705,740,775,810,845,870,905,940],
+    jext:[130,139,149,145,155,161,170,175,181,187,194,202]}
+};
+
+var MAPA_DATA=[
+  {ss:"SS Metro Central",espec:"Traumatología",proc:"Prótesis cadera/rodilla",stock:38200,capPub:18000,privDisp:14000,costoMAI:"$920k",costoMLE:"$780k",dif:"-15.2%",rec:"MLE selectivo",recCls:"heat-high"},
+  {ss:"SS Metro Central",espec:"Oftalmología",proc:"Facoemulsificación catarata",stock:22400,capPub:9600,privDisp:12000,costoMAI:"$480k",costoMLE:"$410k",dif:"-14.6%",rec:"MLE prioritario",recCls:"heat-high"},
+  {ss:"SS Metro Central",espec:"Cirugía Digestiva",proc:"Colecistectomía laparoscópica",stock:19800,capPub:11200,privDisp:8000,costoMAI:"$640k",costoMLE:"$560k",dif:"-12.5%",rec:"MLE moderado",recCls:"heat-med"},
+  {ss:"SS Biobío",espec:"Traumatología",proc:"Artroscopías rodilla/hombro",stock:28400,capPub:12000,privDisp:9200,costoMAI:"$860k",costoMLE:"$760k",dif:"-11.6%",rec:"MLE selectivo",recCls:"heat-med"},
+  {ss:"SS Biobío",espec:"Cirugía Digestiva",proc:"Hernioplastía inguinal",stock:17600,capPub:9800,privDisp:6400,costoMAI:"$580k",costoMLE:"$540k",dif:"-6.9%",rec:"Reforzar MAI",recCls:"heat-warn"},
+  {ss:"SS Valparaíso",espec:"Oftalmología",proc:"Facoemulsificación catarata",stock:18200,capPub:7400,privDisp:8800,costoMAI:"$490k",costoMLE:"$420k",dif:"-14.3%",rec:"MLE prioritario",recCls:"heat-high"},
+  {ss:"SS Valparaíso",espec:"Traumatología",proc:"Prótesis cadera/rodilla",stock:21600,capPub:8800,privDisp:7200,costoMAI:"$940k",costoMLE:"$800k",dif:"-14.9%",rec:"MLE selectivo",recCls:"heat-high"},
+  {ss:"SS Valparaíso",espec:"Cirugía Digestiva",proc:"Colecistectomía laparoscópica",stock:12400,capPub:8200,privDisp:4800,costoMAI:"$620k",costoMLE:"$580k",dif:"-6.5%",rec:"Reforzar MAI",recCls:"heat-warn"},
+];
+
+var PRESTADORES=[
+  {nombre:"Hospital San Juan de Dios",tipo:"pub",tipoCls:"pt-pub",espec:"Traumatología",cap:"2.800/año",costo:"$920k",vsMAI:"—",calidad:"★★★★",estado:"Activo MAI",eleg:"MAI"},
+  {nombre:"Hospital El Salvador",tipo:"pub",tipoCls:"pt-pub",espec:"Oftalmología",cap:"1.200/año",costo:"$480k",vsMAI:"—",calidad:"★★★★★",estado:"Activo MAI",eleg:"MAI"},
+  {nombre:"Clínica Las Condes",tipo:"priv",tipoCls:"pt-priv",espec:"Traumatología",cap:"1.600/año",costo:"$780k",vsMAI:"-15.2%",calidad:"★★★★★",estado:"Contrato MLE",eleg:"MLE"},
+  {nombre:"Red de Salud UC",tipo:"priv",tipoCls:"pt-priv",espec:"Oftalmología",cap:"2.400/año",costo:"$410k",vsMAI:"-14.6%",calidad:"★★★★★",estado:"Contrato MLE",eleg:"MLE"},
+  {nombre:"INDISA",tipo:"priv",tipoCls:"pt-priv",espec:"Cirugía Digestiva",cap:"1.800/año",costo:"$555k",vsMAI:"-13.3%",calidad:"★★★★",estado:"En negociación",eleg:"MLE pend."},
+  {nombre:"Clínica Bupa Santiago",tipo:"priv",tipoCls:"pt-priv",espec:"Traumatología",cap:"1.200/año",costo:"$810k",vsMAI:"-12.0%",calidad:"★★★★",estado:"Evaluando",eleg:"Evaluando"},
+  {nombre:"Hospital Félix Bulnes",tipo:"pub",tipoCls:"pt-pub",espec:"Cirugía Digestiva",cap:"1.400/año",costo:"$640k",vsMAI:"—",calidad:"★★★",estado:"Activo MAI",eleg:"MAI"},
+  {nombre:"Clínica Vistamed",tipo:"priv",tipoCls:"pt-priv",espec:"Oftalmología",cap:"3.600/año",costo:"$395k",vsMAI:"-17.7%",calidad:"★★★★",estado:"Contrato MLE",eleg:"MLE"},
+  {nombre:"Hospital Barros Luco",tipo:"pub",tipoCls:"pt-pub",espec:"Traumatología",cap:"2.200/año",costo:"$900k",vsMAI:"—",calidad:"★★★★",estado:"Cap. subutilizada",eleg:"MAI"},
+  {nombre:"Clínica Santa María",tipo:"priv",tipoCls:"pt-priv",espec:"Cirugía Digestiva",cap:"1.000/año",costo:"$590k",vsMAI:"-7.8%",calidad:"★★★★★",estado:"Evaluando",eleg:"Evaluando"},
+];
+
+var INSTITUCIONES=[
+  {sigla:"FONASA",role:"Comprador estratégico — MAI y MLE",pain:"Presupuesto fijo pero lista creciente; mix actual no optimizado; poca visibilidad de costo-efectividad por prestador",delivers:"Mapa oferta–demanda · Análisis costo/caso · Contratos MLE auditables · ROI de compra",val:"MM$ 18.200",vc:"green",sub:"ahorro proyectado piloto 12 meses (mezcla óptima)",detail:[{l:"Stock piloto",v:"255.400",d:"casos en 3 especialidades"},{l:"Ahorro MLE vs MAI",v:"12–18%/caso",d:"especialidades piloto"},{l:"Contratos vigentes",v:"3 MLE",d:"Trauma, Oftal, Cirug."},{l:"ROI compra estratégica",v:">300%",d:"vs costo operación piloto"}]},
+  {sigla:"MINSAL",role:"Rector política de red de prestadores",pain:"Debate sobre MLE y red preferente; necesita evidencia concreta antes de cualquier reforma estructural",delivers:"Evidencia piloto de eficiencia · Costo-calidad por prestador · Insumo para política de red",val:"3 pilotos",vc:"blue",sub:"especialidades con evidencia costo-calidad documentada",detail:[{l:"Especialidades piloto",v:"Trauma, Oftal, Cirug.",d:"alto rezago + costo-efectivo"},{l:"Cobertura piloto",v:"3 SS",d:"Metro Central, Biobío, Valpo"},{l:"Resultados clínicos",v:"Integración TRD",d:"en diseño"},{l:"Reforma estructural",v:"No es el piloto",d:"evidencia para futuro debate"}]},
+  {sigla:"DIPRES",role:"Control fiscal — ROI y eficiencia de gasto",pain:"¿Los fondos de listas de espera se gastan bien? ¿Se puede resolver más con el mismo presupuesto?",delivers:"ROI por tipo de compra · Costo promedio vs benchmark · Informe escalamiento",val:"340%",vc:"violet",sub:"ROI estimado compra estratégica (costo piloto vs ahorro)",detail:[{l:"Costo operación piloto",v:"MM$ 800",d:"equipo técnico + TI"},{l:"Ahorro verificado",v:"MM$ 18.200",d:"12 meses proyectados"},{l:"Informe a DIPRES",v:"Mensual",d:"con trazabilidad full"},{l:"Escalamiento",v:"Mes 8",d:"condicional a resultados"}]},
+  {sigla:"CONTRALORÍA",role:"Auditor de contratos con privados",pain:"Contratos con prestadores privados son de alto riesgo político; necesitan fundamento costo-calidad documentado",delivers:"Audit trail contractual · Criterios de selección · Defensa ante reparos y cuestionamientos",val:"100%",vc:"teal",sub:"contratos con trazabilidad completa de criterios de selección",detail:[{l:"Log contractual",v:"Inmutable",d:"fundamento de cada MLE"},{l:"Criterios selección",v:"Costo+calidad",d:"documento de evaluación"},{l:"Respuesta reparos",v:"48 hrs",d:"con evidencia documentada"},{l:"Retención",v:"10 años",d:"registro contratos FONASA"}]},
+  {sigla:"PRESTADORES",role:"Proveedores de servicios quirúrgicos",pain:"Sin certeza de volumen y precio; poco incentivo para negociar; acceso fragmentado",delivers:"Señales de demanda · Precios de referencia · Proceso de contratación transparente",val:"48",vc:"orange",sub:"prestadores mapeados (públicos + privados) en piloto",detail:[{l:"Prestadores públicos",v:"18",d:"hospitales SS piloto"},{l:"Prestadores privados",v:"30",d:"con capacidad disponible"},{l:"Contratos MLE",v:"3 activos",d:"Clínica LC, UC, Vistamed"},{l:"En evaluación",v:"4",d:"INDISA, Bupa, SM, otros"}]},
+  {sigla:"SUPERDESALUD",role:"Supervisor de calidad en prestadores MLE",pain:"MLE a privados sin control de calidad sistemático; riesgo de incentivos a resolver casos simples",delivers:"Métricas de calidad por prestador · Alertas de sobre-resolución simple · Panel de auditoría",val:"12",vc:"gold",sub:"indicadores de calidad monitoreados por prestador MLE",detail:[{l:"Indicadores calidad",v:"12 KPI",d:"por especialidad y prestador"},{l:"Tasa readmisión",v:"<3%",d:"umbral contrato"},{l:"Resolución compleja",v:"Monitoreo",d:"vs solo casos simples"},{l:"Auditoría spot",v:"Trimestral",d:"10% de contratos MLE"}]},
+];
+
+var NORM_DATA=[
+  {inst:"DFL N°1/2005 art. 141–160 — Modalidad Libre Elección FONASA",emisor:"Minsal",rel:"Crítico",estado:"ok",implic:"Marco legal MLE; aranceles de referencia; elegibilidad beneficiarios FONASA Tramos B-C-D"},
+  {inst:"Res. Ex. FONASA N°854/2025 — Aranceles piloto 2026",emisor:"FONASA",rel:"Crítico",estado:"ok",implic:"Precios de referencia MAI/MLE para las 3 especialidades piloto; base de negociación contratos"},
+  {inst:"Glosa presupuestaria 2026 — Compra servicios quirúrgicos",emisor:"DIPRES",rel:"Alto",estado:"ok",implic:"MM$ 18.400 disponibles para compra quirúrgica piloto; rendición trimestral de resultados"},
+  {inst:"Decreto Superdesalud N°14/2024 — Estándares calidad prestadores",emisor:"Superdesalud",rel:"Alto",estado:"ok",implic:"Indicadores mínimos para contratar con privados; tasa readmisión, infección, mortalidad"},
+  {inst:"Ley N°21.365 — Protección datos de salud",emisor:"Congreso",rel:"Crítico",estado:"ok",implic:"Datos del paciente en contratos MLE; seudonimización; control acceso prestador privado"},
+  {inst:"Circular Contraloría N°72/2023 — Contratos con privados",emisor:"Contraloría",rel:"Crítico",estado:"warn",implic:"Fundamento costo-efectividad obligatorio; criterios de selección documentados; audit trail"},
+  {inst:"Análisis MLE — Subsecretaría de Salud Pública (2025)",emisor:"Minsal",rel:"Medio",estado:"ok",implic:"Uso MLE Tramo B-D; tasa utilización 7.137 servicios/beneficiario; referencia metodológica"},
+];
+
+var EVENTS_FEED=[
+  {type:"ok",icon:"✓",name:"Contrato MLE suscrito — Clínica Las Condes: 340 casos Traumatología",cat:"Contrato",detalle:"$780k/caso vs $920k MAI · Ahorro: MM$ 47,6 · Trazabilidad completa"},
+  {type:"ok",icon:"✓",name:"Paquete Oftalmología aprobado — Red UC: 480 cataratas",cat:"Contrato",detalle:"$410k/caso vs $480k MAI · Ahorro: MM$ 33,6 · Calidad: ★★★★★"},
+  {type:"warn",icon:"!",name:"Sobreprecio detectado: Clínica Bupa — $870k vs benchmark $800k",cat:"Control precio",detalle:"Diferencia: +8.75% sobre precio paquete negociado · Notificación enviada"},
+  {type:"ok",icon:"✓",name:"Hospital Barros Luco: capacidad subutilizada detectada — 400 slots libres",cat:"Capacidad pública",detalle:"Traumatología · 400 horas pabellón disponibles Q2 · Derivación interna prioritaria"},
+  {type:"ok",icon:"✓",name:"Resultado verificado: 312 cirugías completadas — Clínica Las Condes",cat:"Seguimiento",detalle:"Tasa readmisión: 1.2% (umbral <3%) · Calidad conforme · Pago procesado"},
+  {type:"warn",icon:"!",name:"INDISA: Precio ofertado $590k hernioplastía — En evaluación",cat:"Negociación",detalle:"Benchmark MAI: $640k · MLE target: $560k · Diferencia: +$30k · Contraoferta en curso"},
+];
+
+var REPORTS=[
+  {title:"Informe DIPRES — Avance Compra Estratégica Piloto",sub:"Casos resueltos · Ahorro vs línea base · ROI por especialidad",period:"Mensual — 30-Abr-2026",pdf:"cq_informe_dipres.pdf",icon:"💰",badge:"DIPRES"},
+  {title:"Informe Mesa Técnica FONASA–Minsal — Eje 3",sub:"Mapa oferta–demanda · Contratos vigentes · Seguimiento resultados",period:"Quincenal",pdf:"cq_informe_mesa.pdf",icon:"🏛",badge:"Gobernanza"},
+  {title:"Reporte Contraloría — Contratos con Privados",sub:"Fundamento de selección · Criterios costo-calidad · Audit trail inmutable",period:"Trimestral",pdf:"cq_contraloria.pdf",icon:"⚖️",badge:"Contraloría"},
+  {title:"Reporte Prestadores — Desempeño y Calidad",sub:"KPIs por prestador · Readmisión · Resolución compleja vs simple",period:"Mensual",pdf:"cq_prestadores.pdf",icon:"🏥",badge:"Calidad"},
+  {title:"Audit Trail — Decisiones contractuales",sub:"Log inmutable de contratos, precios, criterios y resultados",period:"Continuo · A la fecha",pdf:"cq_audit_trail.pdf",icon:"🔍",badge:"Auditoría"},
+  {title:"Nota Técnica — Metodología Compra Estratégica v1.0",sub:"Criterios de selección · Benchmark precios · Modelo costo-calidad",period:"Versión marzo 2026",pdf:"cq_metodologia.pdf",icon:"📐",badge:"Técnico"},
+];
+
+var SCENARIOS={
+  paquete:{cls:"ab-ok",msg:"📦 Paquete MLE negociado: INDISA acepta $555k/caso hernioplastía inguinal (vs MAI $640k, -13.3%). 200 casos cubiertos · Q2 2026. Ahorro estimado: MM$ 17. Contrato en firma. Criterios documentados en observabilidad."},
+  sobreprecio:{cls:"ab-err",msg:"⚠️ Alerta precio: Clínica Bupa presupuestó $870k/cirugía Traumatología (referencia negociada: $800k). Diferencia: +8,75%. Proceso de auditoría de precios activado. Pago retenido hasta resolución."},
+  capacidad:{cls:"ab-blue",msg:"🏥 Capacidad pública subutilizada: Hospital Barros Luco tiene 640 horas pabellón disponibles en mayo 2026. 480 casos segmento Crítico Traumatología reasignados. Costo: $900k/caso vs $780k MLE — análisis en curso."},
+  contrato:{cls:"ab-ok",msg:"📋 Contrato MLE suscrito: Clínica Vistamed — 600 cataratas adicionales · $395k/caso (vs $480k MAI, -17.7%). Plazo: abril-diciembre 2026. Calidad: ★★★★ · Indicadores Superdesalud validados. Audit trail actualizado."},
+  resultado:{cls:"ab-ok",msg:"✅ Resultado verificado Q1-2026: 1.132 casos resueltos por contratos MLE piloto. Ahorro acumulado: MM$ 96,8. Tasa readmisión media: 1.8% (<3% umbral). Calidad conforme. Informe DIPRES enviado."},
+  random:{cls:""}
+};
+
+var currentPiloto="trauma",totalAhorro=0,totalCasos=0,totalContr=0,obsEntries=[];
+var chartRsol=null,chartMixPie=null,chartBrecha=null,chartCostos=null;
+var chartMixT=null,chartMixO=null,chartMixC=null,chartAranc=null;
+var simRun=false;
+
+function updateKPIs(){
+  var p=PILOTOS[currentPiloto];
+  var roi=totalAhorro>0&&totalCasos>0?Math.round((totalAhorro/(totalCasos*0.8))*100):0;
+  var reduc=totalCasos>0?Math.min(25,Math.round(totalCasos/p.stock*1000)/10):0;
+  document.getElementById("kCostoMAI").textContent=p.costoMAI;
+  document.getElementById("kCostoMAISub").textContent="línea base "+p.name;
+  document.getElementById("kAhorro").textContent="MM$ "+totalAhorro.toLocaleString("es-CL");
+  document.getElementById("kAhorroSub").textContent=totalCasos>0?totalCasos.toLocaleString("es-CL")+" casos desviados a MLE":"Acumulado piloto";
+  document.getElementById("kCasos").textContent=totalCasos.toLocaleString("es-CL");
+  document.getElementById("kCasosSub").textContent=totalContr>0?totalContr+" contratos activos":"Sin contratos activos aún";
+  document.getElementById("kROI").textContent=roi+"%";
+  document.getElementById("kStock").textContent=Math.max(0,p.stock-totalCasos).toLocaleString("es-CL");
+  document.getElementById("kStockSub").textContent=p.name+" · 3 SS";
+  document.getElementById("kPrest").textContent=p.prest;
+  document.getElementById("kPrestSub").textContent="públicos + privados mapeados";
+  document.getElementById("kContr").textContent=totalContr;
+  document.getElementById("kContrSub").textContent=totalContr>0?"Paquetes negociados activos":"Pendiente contratación";
+  document.getElementById("kReduc").textContent=reduc.toFixed(1).replace(".",",")+"%";
+  document.getElementById("pilotoName").textContent=p.name;
+  document.getElementById("pilotoDetail").textContent=p.detail;
+  document.getElementById("overviewSub").textContent="Programa Fonasa 2026 · Piloto: "+p.name+" · Mix MAI/MLE optimizado · Sin aumento presupuesto global";
+}
+
+function buildCharts(){
+  var p=PILOTOS[currentPiloto];
+  if(chartRsol)chartRsol.destroy();
+  if(chartMixPie)chartMixPie.destroy();
+  chartRsol=new Chart(document.getElementById("cResoluciones"),{
+    type:"bar",
+    data:{labels:p.meses,datasets:[
+      {label:"MAI (público)",data:p.mai,backgroundColor:"rgba(29,158,117,.5)",borderColor:"#1D9E75",borderWidth:1.5,borderRadius:3},
+      {label:"MLE (privado)",data:p.mle,backgroundColor:"rgba(55,138,221,.5)",borderColor:"#378ADD",borderWidth:1.5,borderRadius:3},
+      {label:"Jornada ext.",data:p.jext,backgroundColor:"rgba(201,168,76,.5)",borderColor:"#C9A84C",borderWidth:1.5,borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}}},scales:{x:{stacked:true,ticks:{color:"#7A8BA0",font:{size:9},maxRotation:45}},y:{stacked:true,ticks:{color:"#7A8BA0",font:{size:9}}}}}
+  });
+  chartMixPie=new Chart(document.getElementById("cMixPie"),{
+    type:"doughnut",
+    data:{labels:["MAI (público)","MLE (privado)","Jornada ext."],
+      datasets:[
+        {label:"Actual",data:[60,32,8],backgroundColor:["rgba(29,158,117,.5)","rgba(55,138,221,.5)","rgba(201,168,76,.5)"],borderWidth:0},
+        {label:"Óptimo",data:[40,52,8],backgroundColor:["rgba(29,158,117,.2)","rgba(55,138,221,.2)","rgba(201,168,76,.2)"],borderWidth:2,borderColor:["#1D9E75","#378ADD","#C9A84C"]}
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"55%",plugins:{legend:{position:"bottom",labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}},tooltip:{callbacks:{label:function(x){return" "+x.parsed+"%"}}}}}
+  });
+}
+
+function buildMapaTable(){
+  var tb=document.getElementById("mapaTbody");tb.innerHTML="";
+  MAPA_DATA.forEach(function(r){
+    var brecha=r.stock-r.capPub;
+    var brechaCls=brecha>20000?"heat-low":brecha>10000?"heat-warn":"heat-med";
+    var difCls=parseFloat(r.dif)<-12?"heat-high":parseFloat(r.dif)<-8?"heat-med":"heat-warn";
+    var tr=document.createElement("tr");
+    tr.innerHTML='<td class="td-proc">'+r.ss+'</td>'+
+      '<td><span class="espec-tag '+(r.espec==="Traumatología"?"et-trauma":r.espec==="Oftalmología"?"et-oftal":"et-cirug")+'">'+r.espec+'</span><br><span style="font-size:.7rem;color:var(--muted)">'+r.proc+'</span></td>'+
+      '<td class="td-mono" style="font-weight:700">'+r.stock.toLocaleString("es-CL")+'</td>'+
+      '<td class="td-mono">'+r.capPub.toLocaleString("es-CL")+'</td>'+
+      '<td class="'+brechaCls+'">'+brecha.toLocaleString("es-CL")+'</td>'+
+      '<td class="td-mono">'+r.privDisp.toLocaleString("es-CL")+'</td>'+
+      '<td class="td-cost">'+r.costoMAI+'</td>'+
+      '<td class="td-save">'+r.costoMLE+'</td>'+
+      '<td class="'+difCls+'">'+r.dif+'</td>'+
+      '<td><span class="status-pill '+(r.recCls==="heat-high"?"sp-ok":r.recCls==="heat-med"?"sp-blue":"sp-warn")+'">'+r.rec+'</span></td>';
+    tb.appendChild(tr);
+  });
+}
+
+function buildBrechaCharts(){
+  if(chartBrecha)chartBrecha.destroy();
+  if(chartCostos)chartCostos.destroy();
+  chartBrecha=new Chart(document.getElementById("cBrecha"),{
+    type:"bar",
+    data:{
+      labels:["Trauma Metro","Oftal Metro","Cirug Metro","Trauma Biobío","Cirug Biobío","Oftal Valpo","Trauma Valpo","Cirug Valpo"],
+      datasets:[
+        {label:"Stock lista",data:[38200,22400,19800,28400,17600,18200,21600,12400],backgroundColor:"rgba(224,82,82,.4)",borderColor:"#E05252",borderWidth:2,borderRadius:3},
+        {label:"Capacidad pública",data:[18000,9600,11200,12000,9800,7400,8800,8200],backgroundColor:"rgba(55,138,221,.4)",borderColor:"#378ADD",borderWidth:2,borderRadius:3},
+        {label:"Cap. privada disponible",data:[14000,12000,8000,9200,6400,8800,7200,4800],backgroundColor:"rgba(29,158,117,.4)",borderColor:"#1D9E75",borderWidth:2,borderRadius:3}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}}},scales:{x:{ticks:{color:"#7A8BA0",font:{size:8},maxRotation:45}},y:{ticks:{color:"#7A8BA0",callback:function(v){return v>=1000?Math.round(v/1000)+"K":v},font:{size:9}}}}}
+  });
+  chartCostos=new Chart(document.getElementById("cCostos"),{
+    type:"bar",
+    data:{
+      labels:["Trauma","Oftalmología","Cirugía Dig."],
+      datasets:[
+        {label:"MAI (ref.)",data:[920,480,640],backgroundColor:"rgba(201,168,76,.4)",borderColor:"#C9A84C",borderWidth:2,borderRadius:3},
+        {label:"MLE negociado",data:[780,410,560],backgroundColor:"rgba(29,158,117,.4)",borderColor:"#1D9E75",borderWidth:2,borderRadius:3},
+        {label:"Mercado libre",data:[1240,680,820],backgroundColor:"rgba(224,82,82,.4)",borderColor:"#E05252",borderWidth:2,borderRadius:3}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}},tooltip:{callbacks:{label:function(x){return" $"+x.parsed.y+"k/caso"}}}},scales:{x:{ticks:{color:"#7A8BA0",font:{size:10}}},y:{ticks:{color:"#7A8BA0",callback:function(v){return"$"+v+"k"},font:{size:9}}}}}
+  });
+}
+
+function buildMixCharts(){
+  if(chartMixT)chartMixT.destroy();
+  if(chartMixO)chartMixO.destroy();
+  if(chartMixC)chartMixC.destroy();
+  var opts=function(title){return{responsive:true,maintainAspectRatio:false,cutout:"65%",plugins:{legend:{position:"bottom",labels:{color:"#7A8BA0",boxWidth:8,font:{size:9},padding:6}},tooltip:{callbacks:{label:function(x){return" "+x.parsed+"%"}}}}}};
+  var cols=["rgba(29,158,117,.6)","rgba(55,138,221,.6)","rgba(201,168,76,.6)"];
+  chartMixT=new Chart(document.getElementById("cMixTrauma"),{type:"doughnut",data:{labels:["MAI","MLE","Jorn."],datasets:[{data:[62,30,8],backgroundColor:cols,borderWidth:0}]},options:opts()});
+  chartMixO=new Chart(document.getElementById("cMixOftal"),{type:"doughnut",data:{labels:["MAI","MLE","Jorn."],datasets:[{data:[56,36,8],backgroundColor:cols,borderWidth:0}]},options:opts()});
+  chartMixC=new Chart(document.getElementById("cMixCirug"),{type:"doughnut",data:{labels:["MAI","MLE","Jorn."],datasets:[{data:[64,28,8],backgroundColor:cols,borderWidth:0}]},options:opts()});
+}
+
+function runSimMix(){
+  if(simRun)return;simRun=true;
+  var p=PILOTOS[currentPiloto];
+  var baseCasos=p.stock*0.4;
+  var costoMAInum=parseInt(p.costoMAI.replace("$","").replace("k",""))*1000;
+  var costoMLEnum=parseInt(p.costoMLE.replace("$","").replace("k",""))*1000;
+  var diff=costoMAInum-costoMLEnum;
+  var a10=Math.round(baseCasos*0.10*diff/1e6);
+  var a20=Math.round(baseCasos*0.20*diff/1e6);
+  var a30=Math.round(baseCasos*0.30*diff/1e6);
+  document.getElementById("sim10").textContent="MM$ "+a10.toLocaleString("es-CL");
+  document.getElementById("sim20").textContent="MM$ "+a20.toLocaleString("es-CL");
+  document.getElementById("sim30").textContent="MM$ "+a30.toLocaleString("es-CL");
+  setTimeout(function(){document.getElementById("bar10").style.width=Math.min(90,a10/a30*80)+"%";},100);
+  setTimeout(function(){document.getElementById("bar20").style.width=Math.min(90,a20/a30*80)+"%";},300);
+  setTimeout(function(){document.getElementById("bar30").style.width="80%";},500);
+}
+
+function buildAranChart(){
+  if(chartAranc)chartAranc.destroy();
+  chartAranc=new Chart(document.getElementById("cAranceles"),{
+    type:"bar",
+    data:{
+      labels:["Prótesis cadera","Prótesis rodilla","Artroscopía","Facoemulsif.","Colecistect.","Hernioplastía","Apendicect."],
+      datasets:[
+        {label:"Arancel MAI FONASA ($k)",data:[920,890,480,480,640,580,520],backgroundColor:"rgba(201,168,76,.5)",borderColor:"#C9A84C",borderWidth:2,borderRadius:3},
+        {label:"Paquete MLE negociado ($k)",data:[780,750,410,410,560,555,470],backgroundColor:"rgba(29,158,117,.5)",borderColor:"#1D9E75",borderWidth:2,borderRadius:3},
+        {label:"Precio mercado libre ($k)",data:[1240,1180,640,680,820,740,680],backgroundColor:"rgba(224,82,82,.35)",borderColor:"#E05252",borderWidth:2,borderRadius:3}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:"#7A8BA0",boxWidth:10,font:{size:9}}},tooltip:{callbacks:{label:function(x){return" $"+x.parsed.y+"k/caso"}}}},scales:{x:{ticks:{color:"#7A8BA0",font:{size:9},maxRotation:30}},y:{ticks:{color:"#7A8BA0",callback:function(v){return"$"+v+"k"},font:{size:9}}}}}
+  });
+}
+
+function buildPrestTable(){
+  var tb=document.getElementById("prestTbody");tb.innerHTML="";
+  var count=0;
+  PRESTADORES.forEach(function(r){
+    var diff=r.vsMAI!=="—"?parseFloat(r.vsMAI.replace("%","")):0;
+    var difCls=diff<-12?"sp-ok":diff<-8?"sp-blue":diff<0?"sp-warn":"sp-teal";
+    var stCls=r.estado==="Contrato MLE"?"sp-ok":r.estado==="En negociación"?"sp-warn":r.estado==="Cap. subutilizada"?"sp-err":"sp-blue";
+    var espec=r.espec==="Traumatología"?"et-trauma":r.espec==="Oftalmología"?"et-oftal":"et-cirug";
+    var tr=document.createElement("tr");
+    tr.innerHTML='<td class="td-proc">'+r.nombre+'</td>'+
+      '<td><span class="prest-tag '+r.tipoCls+'">'+(r.tipo==="pub"?"Público":"Privado")+'</span></td>'+
+      '<td><span class="espec-tag '+espec+'">'+r.espec+'</span></td>'+
+      '<td class="td-mono">'+r.cap+'</td>'+
+      '<td class="td-cost">'+r.costo+'</td>'+
+      '<td><span class="status-pill '+difCls+'">'+r.vsMAI+'</span></td>'+
+      '<td style="color:var(--warn)">'+r.calidad+'</td>'+
+      '<td><span class="status-pill '+stCls+'">'+r.estado+'</span></td>'+
+      '<td><span class="status-pill '+(r.eleg==="MLE"?"sp-ok":r.eleg==="MAI"?"sp-blue":r.eleg==="MLE pend."?"sp-warn":"sp-teal")+'">'+r.eleg+'</span></td>';
+    tb.appendChild(tr);count++;
+  });
+  document.getElementById("prestCount").textContent=count+" prestadores";
+}
+
+function buildNorma(){
+  var tb=document.getElementById("normTbody");tb.innerHTML="";
+  NORM_DATA.forEach(function(r){
+    var stCls=r.estado==="ok"?"sp-ok":"sp-warn";var stLbl=r.estado==="ok"?"✓ OK":"⚠ Revisar";
+    var tr=document.createElement("tr");
+    tr.innerHTML='<td style="font-size:.78rem;font-weight:600;color:var(--text)">'+r.inst+'</td>'+
+      '<td><span class="norm-chip">'+r.emisor+'</span></td>'+
+      '<td style="font-size:.75rem;color:var(--muted)">'+r.rel+'</td>'+
+      '<td><span class="status-pill '+stCls+'">'+stLbl+'</span></td>'+
+      '<td style="font-size:.74rem;color:var(--muted)">'+r.implic+'</td>';
+    tb.appendChild(tr);
+  });
+}
+
+function buildInstituciones(){
+  var g=document.getElementById("instGrid");g.innerHTML="";
+  INSTITUCIONES.forEach(function(inst,i){
+    var d=document.createElement("div");d.className="inst-card";
+    d.innerHTML='<div class="ic-sigla">'+inst.sigla+'</div><div class="ic-role">'+inst.role+'</div><div class="ic-val '+inst.vc+'">'+inst.val+'</div><div class="ic-sub">'+inst.sub+'</div>';
+    d.onclick=function(){showInst(i)};g.appendChild(d);
+  });
+}
+
+function showInst(i){
+  document.querySelectorAll(".inst-card").forEach(function(c,j){c.classList.toggle("sel",j===i)});
+  var inst=INSTITUCIONES[i];
+  var dp=document.getElementById("instDetail");
+  var h='<div class="detail-card"><div style="margin-bottom:.5rem">'+
+    '<div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">'+inst.sigla+' — Rol en Eje 3 Compra Quirúrgica</div>'+
+    '<div style="font-size:1rem;font-weight:700;color:var(--text);margin-top:.2rem">'+inst.role+'</div></div>'+
+    '<div style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem"><strong style="color:var(--red)">Problema:</strong> '+inst.pain+'</div>'+
+    '<div style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem"><strong style="color:var(--green)">CompraEye entrega:</strong> '+inst.delivers+'</div>'+
+    '<div class="dp-grid">';
+  inst.detail.forEach(function(it){h+='<div class="dp-item"><div class="dp-lbl">'+it.l+'</div><div class="dp-v">'+it.v+'</div><div class="dp-d">'+it.d+'</div></div>';});
+  h+='</div></div>';dp.innerHTML=h;
+}
+
+function buildObsLog(){
+  var container=document.getElementById("obsLog");container.innerHTML="";
+  var entries=[
+    {ts:"2026-04-08 11:04:22",actor:"FONASA-Compras",action:"Contrato MLE firmado — Clínica Vistamed: 600 cataratas · $395k/caso · Plazo: may-dic 2026",detail:"Ahorro vs MAI: $85k/caso · Total: MM$ 51 · Criterios: precio (-17.7%) + calidad ★★★★ + capacidad ≥600/año"},
+    {ts:"2026-04-08 09:30:11",actor:"CompraEye Sistema",action:"Alerta precio: Clínica Bupa $870k Trauma — Desviación +8.75% sobre precio paquete negociado",detail:"Pago retenido · Proceso auditoría precios activado · Respuesta Bupa solicitada en 5 días hábiles"},
+    {ts:"2026-04-07 16:00:03",actor:"FONASA-Compras",action:"Mapa oferta–demanda actualizado — 8 combinaciones SS × especialidad recalculadas",detail:"Brecha total piloto: 142.000 casos sin resolver con capacidad pública · Privados disponibles: 79.400"},
+    {ts:"2026-04-07 10:15:44",actor:"Mesa Técnica FONASA–Minsal",action:"Sesión quincenal — Aprobación paquete cirugía digestiva INDISA (condicional precio final)",detail:"Acta N°08-2026 · Participantes: FONASA, Minsal Redes, DIPRES (obs.) · Voto unánime con condición precio"},
+    {ts:"2026-04-05 08:00:00",actor:"DIPRES",action:"Informe Q1-2026 recibido — 1.132 casos resueltos · Ahorro MM$ 96,8 · ROI 342%",detail:"Meta Q1: 800 casos · Cumplimiento: 141% · Tasa readmisión media MLE: 1.8% (umbral <3%) · ✓ Conforme"},
+  ];
+  obsEntries.forEach(function(e){entries.unshift(e)});
+  document.getElementById("obsCount").textContent=entries.length+" entradas";
+  entries.forEach(function(e){
+    var d=document.createElement("div");d.className="observ-log";
+    d.innerHTML='<div class="ol-head"><span class="ol-ts">'+e.ts+'</span><span class="ol-actor">'+e.actor+'</span></div>'+
+      '<div class="ol-action">'+e.action+'</div><div class="ol-detail">'+e.detail+'</div>';
+    container.appendChild(d);
+  });
+}
+
+function addObsLog(){
+  var now=new Date().toLocaleString("es-CL").replace(",","");
+  obsEntries.unshift({ts:now,actor:"CompraEye Sistema",action:"Decisión contractual registrada manualmente por operador",detail:"Timestamp: "+new Date().toISOString()+" · Hash: "+Math.random().toString(36).substr(2,12).toUpperCase()});
+  buildObsLog();
+}
+
+function buildReports(){
+  var rl=document.getElementById("reportList");rl.innerHTML="";
+  REPORTS.forEach(function(r){
+    var d=document.createElement("div");d.className="report-card";
+    d.innerHTML='<div class="rc-head"><span class="rc-title">'+r.icon+' '+r.title+'</span><span class="badge">'+r.badge+'</span></div>'+
+      '<div class="rc-meta">'+r.sub+' — '+r.period+'</div>'+
+      '<div class="prog-bar"><div class="prog-fill" id="pf-'+r.pdf.replace('.pdf','')+'"></div></div>';
+    d.onclick=function(){openReport(r)};rl.appendChild(d);
+  });
+}
+
+function openReport(r){
+  var pf=document.getElementById("pf-"+r.pdf.replace('.pdf',''));if(!pf)return;
+  pf.style.width="0%";var w=0;
+  var iv=setInterval(function(){
+    w+=Math.floor(Math.random()*22)+12;if(w>=100){w=100;pf.style.width="100%";clearInterval(iv);
+      setTimeout(function(){alert("📄 En producción: "+r.title+"\nReporte generado automáticamente y distribuido a los destinatarios institucionales correspondientes.");},200);return;}
+    pf.style.width=w+"%";},55);
+}
+
+function buildFeed(){
+  var el=document.getElementById("feedMain");el.innerHTML="";
+  EVENTS_FEED.slice(0,5).forEach(function(ev){
+    var mins=Math.floor(Math.random()*20)+1;
+    var d=document.createElement("div");d.className="feed-item";
+    d.innerHTML='<div class="fi-dot '+(ev.type==="ok"?"ok":"warn")+'">'+ev.icon+'</div>'+
+      '<div style="flex:1"><div class="fi-name">'+ev.name+'</div>'+
+      '<div class="fi-meta"><span>'+ev.cat+'</span><span>'+ev.detalle+'</span><span>hace '+mins+' min</span></div></div>'+
+      '<span class="status-pill '+(ev.type==="ok"?"sp-ok":"sp-warn")+'">'+(ev.type==="ok"?"Completado":"En revisión")+'</span>';
+    el.appendChild(d);
+  });
+}
+
+function simScenario(type){
+  if(type==="random"){var t=["paquete","sobreprecio","capacidad","contrato","resultado"];type=t[Math.floor(Math.random()*t.length)];}
+  var sc=SCENARIOS[type];if(!sc||!sc.msg)return;
+  var now=new Date().toLocaleTimeString("es-CL");
+  ["alertArea","mixAlerts","prestAlerts","normAlerts"].forEach(function(aid){
+    var area=document.getElementById(aid);if(!area)return;
+    var d=document.createElement("div");d.className="alert-banner "+sc.cls;
+    d.innerHTML='<span style="font-family:monospace;font-size:.75rem;flex-shrink:0">['+now+']</span><span>'+sc.msg+'</span>';
+    area.insertBefore(d,area.firstChild);
+    if(area.children.length>2)area.removeChild(area.lastChild);
+  });
+  var isOk=["paquete","contrato","resultado"].indexOf(type)>=0;
+  var isWarn=["sobreprecio","capacidad"].indexOf(type)>=0;
+  var ev=document.createElement("div");
+  ev.className="feed-item "+(isOk?"ok-glow":isWarn?"warn":"alert");
+  ev.innerHTML='<div class="fi-dot '+(isOk?"ok":isWarn?"warn":"blue")+'">'+(isOk?"✓":isWarn?"!":"→")+'</div>'+
+    '<div style="flex:1"><div class="fi-name">'+sc.msg.substring(2,88)+'…</div>'+
+    '<div class="fi-meta"><span>'+now+'</span><span>Simulación Compra-Eye</span></div></div>'+
+    '<span class="status-pill '+(isOk?"sp-ok":isWarn?"sp-warn":"sp-blue")+'">'+(isOk?"Ejecutado":isWarn?"Auditando":"En proceso")+'</span>';
+  var fo=document.getElementById("feedMain");
+  if(fo){fo.insertBefore(ev,fo.firstChild);if(fo.children.length>7)fo.removeChild(fo.lastChild);}
+  if(type==="paquete"){totalAhorro+=17;totalCasos+=200;totalContr++;}
+  else if(type==="contrato"){totalAhorro+=51;totalCasos+=600;totalContr++;}
+  else if(type==="resultado"){totalAhorro+=97;totalCasos+=1132;}
+  else if(type==="capacidad"){totalCasos+=80;}
+  updateKPIs();
+  obsEntries.unshift({ts:new Date().toLocaleString("es-CL").replace(",",""),actor:"CompraEye Simulador",action:sc.msg.substring(2,100),detail:"Escenario: "+type+" · "+new Date().toISOString()});
+  buildObsLog();
+}
+
+function addRandomEvent(){
+  var ev=EVENTS_FEED[Math.floor(Math.random()*EVENTS_FEED.length)];
+  if(ev.type==="ok"){totalCasos+=Math.floor(Math.random()*15)+5;totalAhorro+=Math.floor(Math.random()*8)+2;}
+  updateKPIs();
+  var d=document.createElement("div");d.className="feed-item new";
+  d.innerHTML='<div class="fi-dot '+(ev.type==="ok"?"ok":"warn")+'">'+(ev.type==="ok"?"✓":"!")+'</div>'+
+    '<div style="flex:1"><div class="fi-name">'+ev.name+'</div>'+
+    '<div class="fi-meta"><span>'+ev.cat+'</span><span>'+ev.detalle+'</span><span>hace 1 min</span></div></div>'+
+    '<span class="status-pill '+(ev.type==="ok"?"sp-ok":"sp-warn")+'">'+(ev.type==="ok"?"Completado":"En revisión")+'</span>';
+  var fo=document.getElementById("feedMain");
+  if(fo){fo.insertBefore(d,fo.firstChild);if(fo.children.length>7)fo.removeChild(fo.lastChild);}
+  setTimeout(function(){d.classList.remove("new");},1800);
+}
+
+function changePiloto(v){currentPiloto=v;simRun=false;updateKPIs();buildCharts();}
+
+function showPanel(id,btn){
+  document.querySelectorAll(".panel-wrap").forEach(function(p){p.classList.remove("active");});
+  document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
+  var panel=document.getElementById("panel-"+id);if(panel)panel.classList.add("active");
+  if(btn)btn.classList.add("active");
+  if(id==="mapa")setTimeout(buildBrechaCharts,80);
+  if(id==="mix")setTimeout(buildMixCharts,80);
+  if(id==="normativa")setTimeout(buildAranChart,80);
+}
+
+function updateTimestamp(){
+  var el=document.getElementById("liveTs");
+  if(el)el.textContent="LIVE "+new Date().toLocaleTimeString("es-CL");
+}
+
+buildFeed();buildMapaTable();buildPrestTable();buildNorma();buildInstituciones();buildObsLog();buildReports();updateKPIs();
+setTimeout(buildCharts,100);
+setInterval(addRandomEvent,6000);
+setInterval(updateTimestamp,1000);
+</script>
+</body>
+</html>
